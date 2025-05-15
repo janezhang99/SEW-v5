@@ -1,6 +1,5 @@
 import type React from "react"
 import "@/app/globals.css"
-import { fontSans, fontHeading } from "@/lib/fonts"
 import { ThemeProvider } from "@/components/theme-provider"
 import { GlobalSearch } from "@/components/global-search"
 import { Suspense } from "react"
@@ -8,7 +7,6 @@ import { AICompanionProvider } from "@/components/ai-companion/ai-companion-cont
 import { TasksProvider } from "@/contexts/tasks-context"
 import { ProjectsProvider } from "@/contexts/projects-context"
 import { ExpensesProvider } from "@/contexts/expenses-context"
-import { cn } from "@/lib/utils"
 
 interface RootLayoutProps {
   children: React.ReactNode
@@ -18,7 +16,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable, fontHeading.variable)}>
+      <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ProjectsProvider>
             <ExpensesProvider>
