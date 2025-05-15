@@ -2,9 +2,10 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
-import { generateText } from "ai"
-import { openai } from "@ai-sdk/openai"
-import { v4 as uuidv4 } from "uuid"
+import { usePathname } from "next/navigation"
+import { useProjects } from "@/contexts/projects-context"
+import { useExpenses } from "@/contexts/expenses-context"
+import { useTasks } from "@/contexts/tasks-context"
 import type {
   AICompanionContextType,
   AICompanionState,
@@ -15,9 +16,46 @@ import type {
   UserProfile,
   AvatarType,
 } from "./types"
-
+import type { AICompanionAvatar } from "./types"
 // Sample module flows - in production these would come from a database or API
 import { assessmentModule, budgetingTutorialModule } from "./module-flows"
+import { generateText } from "ai"
+import { openai } from "@ai-sdk/openai"
+import { v4 as uuidv4 } from "uuid"
+
+const defaultAvatars: AICompanionAvatar[] = [
+  {
+    id: "fireweed",
+    name: "Fireweed",
+    description: "Enthusiastic and encouraging. Helps you stay motivated.",
+    imageSrc: "/avatars/fireweed.png",
+  },
+  {
+    id: "labrador-tea",
+    name: "Labrador Tea",
+    description: "Analytical and detail-oriented. Helps with planning and organization.",
+    imageSrc: "/avatars/labrador-tea.png",
+  },
+  {
+    id: "yarrow",
+    name: "Yarrow",
+    description: "Calm and thoughtful. Provides balanced perspectives.",
+    imageSrc: "/avatars/yarrow.png",
+  },
+  {
+    id: "dwarf-birch",
+    name: "Dwarf Birch",
+    description: "Practical and direct. Focuses on actionable steps.",
+    imageSrc: "/avatars/dwarf-birch.png",
+  },
+  {
+    id: "arctic-willow",
+    name: "Arctic Willow",
+    name: "Arctic Willow",
+    description: "Creative and innovative. Helps you think outside the box.",
+    imageSrc: "/avatars/arctic-willow.png",
+  },
+]
 
 const moduleFlows: Record<string, ModuleFlow> = {
   assessment: assessmentModule,
@@ -32,10 +70,20 @@ const initialState: AICompanionState = {
   avatar: "fireweed", // Default avatar
 }
 
-const AICompanionContext = createContext<AICompanionContextType | undefined>(undefined)
+export const AICompanionContext = createContext<AICompanionContextType | undefined>(undefined)
 
-export function AICompanionProvider({ children }: { children: React.ReactNode }) {
+export const AICompanionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [selectedAvatar, setSelectedAvatar] = useState<AICompanionAvatar>(defaultAvatars[0])
+  const [isMinimized, setIsMinimized] = useState(false)
+  const [messages, setMessages] = useState<any[]>([])
+  const [contextualSuggestions, setContextualSuggestions] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const [state, setState] = useState<AICompanionState>(initialState)
+
+  const pathname = usePathname()
+  const { projects, getProject } = useProjects()
+  const { expenses } = useExpenses()
+  const { tasks } = useTasks()
 
   // Initialize with welcome message
   useEffect(() => {
@@ -94,6 +142,96 @@ export function AICompanionProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     localStorage.setItem("preferredAvatar", state.avatar)
   }, [state.avatar])
+
+  // Generate contextual suggestions based on current path and data
+  useEffect(() => {
+    // Extract the current section and possible ID from the path
+    const pathParts = pathname.split("/").filter(Boolean)
+    const section = pathParts[1] || "dashboard"
+    const itemId = pathParts[2]
+
+    let newSuggestions: string[] = []
+
+    // Generate context-aware suggestions
+    switch (section) {
+      case "projects":
+        if (itemId) {
+          const project = getProject(itemId)
+          if (project) {
+            newSuggestions = [
+              `What are the next steps for "${project.title}"?`,
+              `How can I improve the progress of this project?`,
+              `What are some risks I should consider for this project?`,
+              `Help me create a task for "${project.title}"`,
+            ]
+          }
+        } else {
+          newSuggestions = [
+            "How do I create an effective project plan?",
+            "What makes a good project milestone?",
+            "Tips for managing project collaborators",
+            "Help me organize my project tasks",
+          ]
+        }
+        break
+
+      case "expenses":
+        newSuggestions = [
+          "How should I categorize my expenses?",
+          "Tips for budget management",
+          "How to create an expense report",
+          "Help me track project-related expenses",
+        ]
+        break
+
+      case "learning":
+        newSuggestions = [
+          "What skills should I focus on developing?",
+          "How can I apply what I've learned to my projects?",
+          "Recommend learning resources for project management",
+          "Help me create a learning plan",
+        ]
+        break
+
+      case "funding":
+        newSuggestions = [
+          "How do I write an effective grant application?",
+          "What funding sources should I consider?",
+          "Tips for budget planning in grant applications",
+          "Help me prepare for a funder meeting",
+        ]
+        break
+
+      case "mentorship":
+        newSuggestions = [
+          "How do I get the most out of mentorship?",
+          "What questions should I ask my mentor?",
+          "How to prepare for a mentorship session",
+          "Help me find a mentor for my project",
+        ]
+        break
+
+      case "community":
+        newSuggestions = [
+          "How can I engage my community in my project?",
+          "Tips for building partnerships",
+          "How to organize a community event",
+          "Help me create a community outreach plan",
+        ]
+        break
+
+      default:
+        // Dashboard or other pages
+        newSuggestions = [
+          "What should I focus on today?",
+          "Help me prioritize my tasks",
+          "How can I improve my project management?",
+          "Tips for small economy entrepreneurs",
+        ]
+    }
+
+    setContextualSuggestions(newSuggestions)
+  }, [pathname, projects, getProject])
 
   const updateUserProfile = (updates: Partial<UserProfile>) => {
     setState((prev) => ({
@@ -215,81 +353,54 @@ export function AICompanionProvider({ children }: { children: React.ReactNode })
     }
   }
 
-  const sendMessage = async (content: string, isAssistant = false) => {
-    if (!content.trim()) return
-
-    if (isAssistant) {
-      // Add assistant message directly without generating a response
-      const assistantMessage: Message = {
-        id: uuidv4(),
-        role: "assistant",
-        content,
-        timestamp: new Date(),
-      }
-
-      setState((prev) => ({
-        ...prev,
-        conversationHistory: [...prev.conversationHistory, assistantMessage],
-      }))
-      return
-    }
+  // Simulate AI response
+  const sendMessage = async (message: string) => {
+    setIsLoading(true)
 
     // Add user message
-    const userMessage: Message = {
-      id: uuidv4(),
-      role: "user",
-      content,
-      timestamp: new Date(),
+    setMessages((prev) => [...prev, { role: "user", content: message }])
+
+    // Simulate AI thinking
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    // Generate contextual response based on message and current section
+    let response = ""
+    const pathParts = pathname.split("/").filter(Boolean)
+    const section = pathParts[1] || "dashboard"
+
+    // Simple pattern matching for demo purposes
+    if (message.toLowerCase().includes("project")) {
+      response =
+        "Projects are the core of your work at Small Economy Works. They help you organize your initiatives, track progress, and collaborate with others. What specific aspect of project management would you like help with?"
+    } else if (message.toLowerCase().includes("expense") || message.toLowerCase().includes("budget")) {
+      response =
+        "Managing expenses is crucial for the success of your initiatives. Small Economy Works provides tools to track expenses, categorize them, and generate reports. Would you like tips on budget management or help with a specific expense-related task?"
+    } else if (message.toLowerCase().includes("learn")) {
+      response =
+        "Continuous learning is a key value at Small Economy Works. Our learning modules cover project management, financial literacy, community engagement, and more. What skills are you interested in developing?"
+    } else if (message.toLowerCase().includes("mentor")) {
+      response =
+        "Mentorship can accelerate your growth and help you navigate challenges. Small Economy Works connects you with experienced mentors who can provide guidance specific to your needs. Would you like help finding a mentor or preparing for a mentorship session?"
+    } else if (message.toLowerCase().includes("community")) {
+      response =
+        "Community is at the heart of Small Economy Works. Building strong relationships and networks can amplify your impact. How are you currently engaging with your community, and how can I help you strengthen those connections?"
+    } else {
+      response =
+        "I'm here to help you navigate Small Economy Works and make the most of the platform. I can assist with project management, expense tracking, learning resources, funding opportunities, mentorship, and community engagement. What would you like to focus on today?"
     }
 
-    setState((prev) => ({
-      ...prev,
-      conversationHistory: [...prev.conversationHistory, userMessage],
-      isGenerating: true,
-    }))
+    // Add AI response
+    setMessages((prev) => [...prev, { role: "assistant", content: response }])
+    setIsLoading(false)
 
-    try {
-      let response: string
-
-      // Handle guided mode (module flow)
-      if (state.interactionMode === "guided" && state.activeModule && state.currentStepId) {
-        response = await handleGuidedInteraction(content, state.activeModule, state.currentStepId)
-      } else {
-        // Regular chat mode
-        response = await generateResponse(content)
-      }
-
-      // Add AI response
-      const assistantMessage: Message = {
-        id: uuidv4(),
-        role: "assistant",
-        content: response,
-        timestamp: new Date(),
-      }
-
-      setState((prev) => ({
-        ...prev,
-        conversationHistory: [...prev.conversationHistory, assistantMessage],
-        isGenerating: false,
-      }))
-    } catch (error) {
-      console.error("Error in sendMessage:", error)
-
-      // Add error message
-      const errorMessage: Message = {
-        id: uuidv4(),
-        role: "assistant",
-        content: "I'm sorry, I encountered an error. Please try again.",
-        timestamp: new Date(),
-      }
-
-      setState((prev) => ({
-        ...prev,
-        conversationHistory: [...prev.conversationHistory, errorMessage],
-        isGenerating: false,
-        error: "Failed to generate response",
-      }))
-    }
+    // Generate new contextual suggestions based on the conversation
+    const newSuggestions = [
+      "Tell me more about that",
+      "How can I get started?",
+      "What resources are available?",
+      "Show me an example",
+    ]
+    setContextualSuggestions(newSuggestions)
   }
 
   const handleGuidedInteraction = async (
@@ -436,8 +547,16 @@ You are Arctic Willow, the Guide of Resilience. Your personality is:
   }
 
   const value: AICompanionContextType = {
-    state,
+    avatars: defaultAvatars,
+    selectedAvatar,
+    setSelectedAvatar,
+    isMinimized,
+    setIsMinimized,
+    messages,
     sendMessage,
+    isLoading,
+    contextualSuggestions,
+    state,
     startModule,
     updateUserProfile,
     setInteractionMode,

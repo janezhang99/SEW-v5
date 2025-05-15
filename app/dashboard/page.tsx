@@ -1,485 +1,718 @@
 "use client"
-import Link from "next/link"
+
+import { useState, useEffect } from "react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardShell } from "@/components/dashboard-shell"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
-  Clock,
-  DollarSign,
-  ArrowRight,
-  CheckCircle,
-  BarChart3,
-  Calendar,
-  Award,
-  Lightbulb,
-  Users,
-  Heart,
   BookOpen,
   Briefcase,
-  MapPin,
-  Bell,
-  Zap,
+  Calendar,
+  ChevronRight,
+  Clock,
+  DollarSign,
+  FileText,
+  Users,
+  AlertTriangle,
+  CheckCircle2,
+  ArrowUpRight,
 } from "lucide-react"
+import Link from "next/link"
+import { ProjectsProvider, useProjects } from "@/contexts/projects-context"
+import { ExpensesProvider, useExpenses } from "@/contexts/expenses-context"
 import { useTasks } from "@/contexts/tasks-context"
+import { IntegrationService } from "@/lib/integration-service"
+import { formatCurrency } from "@/lib/format-currency"
+import { format, isAfter, isBefore, addDays } from "date-fns"
 
-export default function DashboardPage() {
-  const {
-    tasks,
-    loading,
-    completedTaskIds,
-    getCompletedTasks,
-    getPendingTasks,
-    getTotalPotentialFunding,
-    getUnlockedFunding,
-    getTasksByCategory,
-  } = useTasks()
+function DashboardContent() {
+  const { projects, loading } = useProjects()
+  const { expenses } = useExpenses()
+  const { tasks } = useTasks()
+  const [deadlines, setDeadlines] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const completedTasks = getCompletedTasks()
-  const pendingTasks = getPendingTasks()
-  const totalTasks = tasks.length
-  const progress = Math.round((completedTasks.length / totalTasks) * 100) || 0
+  useEffect(() => {
+    // Simulate loading data from multiple sources
+    const timer = setTimeout(() => {
+      if (!loading) {
+        // Now we pass projects to the service instead of letting it call useProjects()
+        setDeadlines(IntegrationService.getUpcomingDeadlines(projects))
+        setIsLoading(false)
+      }
+    }, 1000)
 
-  const totalPotentialFunding = getTotalPotentialFunding()
-  const unlockedFunding = getUnlockedFunding()
-  const fundingProgress = Math.round((unlockedFunding / totalPotentialFunding) * 100) || 0
+    return () => clearTimeout(timer)
+  }, [loading, projects])
 
-  // Get the next task to highlight
-  const nextTask = pendingTasks[0]
+  // Calculate overall progress across all projects
+  const calculateOverallProgress = () => {
+    if (projects.length === 0) return 0
 
-  // Get tasks by category for the category breakdown
-  const personalTasks = getTasksByCategory("personal")
-  const communityTasks = getTasksByCategory("community")
-  const projectTasks = getTasksByCategory("project")
-  const culturalTasks = getTasksByCategory("cultural")
-  const businessTasks = getTasksByCategory("business")
+    const totalTasks = projects.reduce((sum, project) => sum + project.tasks.length, 0)
+    if (totalTasks === 0) return 0
 
-  // Calculate completion by category
-  const getCategoryCompletion = (categoryTasks) => {
-    if (!categoryTasks.length) return 0
-    const completedCount = categoryTasks.filter((task) => completedTaskIds.includes(task.id)).length
-    return Math.round((completedCount / categoryTasks.length) * 100)
-  }
-
-  const personalProgress = getCategoryCompletion(personalTasks)
-  const communityProgress = getCategoryCompletion(communityTasks)
-  const projectProgress = getCategoryCompletion(projectTasks)
-  const culturalProgress = getCategoryCompletion(culturalTasks)
-  const businessProgress = getCategoryCompletion(businessTasks)
-
-  // Recent activity (mock data)
-  const recentActivity = [
-    {
-      type: "task_completed",
-      title: "Personal Why",
-      date: "Today",
-      icon: <CheckCircle className="h-4 w-4 text-green-500" />,
-    },
-    {
-      type: "funding_unlocked",
-      title: "$100 Funding Unlocked",
-      date: "Today",
-      icon: <DollarSign className="h-4 w-4 text-amber-500" />,
-    },
-    {
-      type: "milestone",
-      title: "Started Learning Journey",
-      date: "Yesterday",
-      icon: <Award className="h-4 w-4 text-purple-500" />,
-    },
-    {
-      type: "task_started",
-      title: "Community Needs",
-      date: "Yesterday",
-      icon: <Clock className="h-4 w-4 text-blue-500" />,
-    },
-  ]
-
-  // Upcoming deadlines (mock data)
-  const upcomingDeadlines = [
-    { title: "Complete Project Vision", date: "In 3 days", icon: <Calendar className="h-4 w-4 text-red-500" /> },
-    { title: "Funding Milestone 1", date: "In 5 days", icon: <DollarSign className="h-4 w-4 text-amber-500" /> },
-  ]
-
-  if (loading) {
-    return (
-      <DashboardShell>
-        <DashboardHeader heading="Welcome to Small Economy Works" text="Loading your dashboard..." />
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading your tasks and funding data...</p>
-          </div>
-        </div>
-      </DashboardShell>
+    const completedTasks = projects.reduce(
+      (sum, project) => sum + project.tasks.filter((task) => task.status === "completed").length,
+      0,
     )
+
+    return Math.round((completedTasks / totalTasks) * 100)
   }
+
+  // Get active projects (not completed)
+  const activeProjects = projects.filter((project) => project.status !== "completed")
+
+  // Get urgent deadlines (due within 3 days)
+  const urgentDeadlines = deadlines.filter(
+    (deadline) =>
+      isBefore(new Date(deadline.dueDate), addDays(new Date(), 3)) && isAfter(new Date(deadline.dueDate), new Date()),
+  )
 
   return (
-    <DashboardShell>
-      <DashboardHeader heading="Your Dashboard" text="Track your progress, funding, and next steps">
-        <Button size="sm" className="gap-2">
-          <Bell className="h-4 w-4" />
-          Notifications
+    <>
+      <DashboardHeader heading="Dashboard" text="Welcome to Small Economy Works">
+        <Button asChild>
+          <Link href="/dashboard/projects/new">
+            <Briefcase className="mr-2 h-4 w-4" />
+            New Project
+          </Link>
         </Button>
       </DashboardHeader>
 
-      {/* Top Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-blue-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700">Learning Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-1 text-blue-700">{progress}%</div>
-            <Progress value={progress} className="h-2 mb-2 bg-blue-100">
-              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${progress}%` }}></div>
-            </Progress>
-            <p className="text-xs text-blue-600">
-              {completedTasks.length} of {totalTasks} tasks completed
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-amber-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-amber-700">Funding Unlocked</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-1 text-amber-700">${unlockedFunding}</div>
-            <Progress value={fundingProgress} className="h-2 mb-2 bg-amber-100">
-              <div className="h-full bg-amber-500 rounded-full" style={{ width: `${fundingProgress}%` }}></div>
-            </Progress>
-            <p className="text-xs text-amber-600">
-              {fundingProgress}% of ${totalPotentialFunding} potential
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-green-700">Next Milestone</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-1 text-green-700">3 Tasks</div>
-            <div className="flex items-center gap-1 text-xs text-green-600">
-              <Award className="h-3 w-3" />
-              <span>Complete 3 more tasks to unlock $250</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-purple-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-purple-700">Time Invested</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold mb-1 text-purple-700">4.5 hrs</div>
-            <div className="flex items-center gap-1 text-xs text-purple-600">
-              <Clock className="h-3 w-3" />
-              <span>This week (estimated)</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Dashboard Content */}
-      <div className="grid gap-6 md:grid-cols-7 mt-6">
-        {/* Left Column */}
-        <div className="md:col-span-4 space-y-6">
-          {/* Priority Task */}
-          {nextTask && (
-            <Card className="border-l-4 border-l-primary">
-              <CardHeader className="pb-2 bg-blue-50/50">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg text-blue-700">Your Priority Task</CardTitle>
-                  <Badge variant="outline" className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200">
-                    <DollarSign className="h-3 w-3" />
-                    <span>${nextTask.fundingAmount}</span>
-                  </Badge>
-                </div>
-                <CardDescription>Complete this task to make progress and unlock funding</CardDescription>
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-4" />
               </CardHeader>
-              <CardContent className="pb-3">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                    {nextTask.icon}
+              <CardContent>
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="mt-2 h-4 w-1/2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-sew-midnight-blue/5">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+              <Briefcase className="h-4 w-4 text-sew-midnight-blue" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activeProjects.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {activeProjects.length === 0
+                  ? "No active projects"
+                  : `${projects.filter((p) => p.status === "in-progress").length} in progress`}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-sew-sunset-orange/5">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Upcoming Deadlines</CardTitle>
+              <Calendar className="h-4 w-4 text-sew-sunset-orange" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{deadlines.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {urgentDeadlines.length > 0 ? `${urgentDeadlines.length} urgent deadlines` : "No urgent deadlines"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-sew-moss-green/5">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
+              <FileText className="h-4 w-4 text-sew-moss-green" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{calculateOverallProgress()}%</div>
+              <Progress value={calculateOverallProgress()} className="h-2 mt-2" />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-sew-sky-blue/5">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Community</CardTitle>
+              <Users className="h-4 w-4 text-sew-sky-blue" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {projects.reduce((sum, project) => sum + project.collaborators.length, 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">Team members across all projects</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <Tabs defaultValue="overview" className="mt-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="deadlines">Deadlines</TabsTrigger>
+          <TabsTrigger value="learning">Learning</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Projects</CardTitle>
+                <CardDescription>Your most recently updated projects</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="flex items-center space-x-4">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[200px]" />
+                          <Skeleton className="h-4 w-[160px]" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <h3 className="font-medium text-lg">{nextTask.name}</h3>
-                    <p className="text-sm text-muted-foreground">{nextTask.description}</p>
+                ) : projects.length > 0 ? (
+                  <div className="space-y-4">
+                    {projects
+                      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                      .slice(0, 3)
+                      .map((project) => (
+                        <div key={project.id} className="flex items-start space-x-4">
+                          <div
+                            className={`mt-0.5 rounded-full p-2 
+                            ${
+                              project.status === "completed"
+                                ? "bg-sew-moss-green/10 text-sew-moss-green"
+                                : project.status === "in-progress"
+                                  ? "bg-sew-sunset-orange/10 text-sew-sunset-orange"
+                                  : "bg-sew-sky-blue/10 text-sew-sky-blue"
+                            }`}
+                          >
+                            <Briefcase className="h-4 w-4" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-medium leading-none">{project.title}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {project.tasks.length} tasks ·
+                              {project.tasks.filter((t) => t.status === "completed").length} completed
+                            </p>
+                            <div className="flex items-center pt-1">
+                              <Badge variant="outline" className="mr-2">
+                                {project.status}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                Updated {format(new Date(project.updatedAt), "MMM d, yyyy")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    <Button asChild variant="outline" className="w-full mt-2">
+                      <Link href="/dashboard/projects">
+                        View all projects
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{nextTask.timeEstimate}</span>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Briefcase className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-muted-foreground mb-4">No projects found</p>
+                    <Button asChild>
+                      <Link href="/dashboard/projects/new">Create your first project</Link>
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Zap className="h-4 w-4 text-amber-500" />
-                    <span className="text-amber-500 font-medium">Recommended next step</span>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Deadlines</CardTitle>
+                <CardDescription>Tasks and milestones due soon</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="flex items-center space-x-4">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[200px]" />
+                          <Skeleton className="h-4 w-[160px]" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                ) : deadlines.length > 0 ? (
+                  <div className="space-y-4">
+                    {deadlines.slice(0, 3).map((deadline) => {
+                      const isUrgent = isBefore(new Date(deadline.dueDate), addDays(new Date(), 3))
+                      const isPast = isBefore(new Date(deadline.dueDate), new Date())
+
+                      return (
+                        <div key={`${deadline.type}-${deadline.id}`} className="flex items-start space-x-4">
+                          <div
+                            className={`mt-0.5 rounded-full p-2 
+                            ${
+                              isPast
+                                ? "bg-red-100 text-red-800"
+                                : isUrgent
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-sew-sky-blue/10 text-sew-sky-blue"
+                            }`}
+                          >
+                            {isPast ? (
+                              <AlertTriangle className="h-4 w-4" />
+                            ) : isUrgent ? (
+                              <Clock className="h-4 w-4" />
+                            ) : (
+                              <Calendar className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <p className="font-medium leading-none">{deadline.title}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {deadline.projectTitle} · {deadline.type}
+                            </p>
+                            <div className="flex items-center pt-1">
+                              <Badge
+                                variant="outline"
+                                className={`mr-2 ${
+                                  isPast
+                                    ? "bg-red-100 text-red-800 border-red-200"
+                                    : isUrgent
+                                      ? "bg-amber-100 text-amber-800 border-amber-200"
+                                      : ""
+                                }`}
+                              >
+                                {isPast ? "Overdue" : isUrgent ? "Urgent" : "Upcoming"}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                Due {format(new Date(deadline.dueDate), "MMM d, yyyy")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    <Button asChild variant="outline" className="w-full mt-2">
+                      <Link href="/dashboard/projects">
+                        View all deadlines
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Calendar className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-muted-foreground">No upcoming deadlines</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Learning</CardTitle>
+                <CardDescription>Your learning progress</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-4 text-center">
+                  <div className="relative h-24 w-24">
+                    <svg className="h-24 w-24" viewBox="0 0 100 100">
+                      <circle
+                        className="text-muted-foreground/20"
+                        strokeWidth="8"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="40"
+                        cx="50"
+                        cy="50"
+                      />
+                      <circle
+                        className="text-sew-moss-green"
+                        strokeWidth="8"
+                        strokeDasharray={250}
+                        strokeDashoffset={250 * (1 - 0.65)}
+                        strokeLinecap="round"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="40"
+                        cx="50"
+                        cy="50"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-2xl font-bold">65%</span>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm font-medium">Learning Progress</p>
+                  <p className="text-xs text-muted-foreground">13 of 20 modules completed</p>
                 </div>
               </CardContent>
-              <CardFooter className="bg-blue-50/50">
-                <Button className="w-full" asChild>
-                  <Link href={`/dashboard/learning/${nextTask.category}/${nextTask.id}`}>
-                    Start This Task
-                    <ArrowRight className="ml-2 h-4 w-4" />
+              <CardFooter>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/dashboard/learning">
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Continue Learning
                   </Link>
                 </Button>
               </CardFooter>
             </Card>
-          )}
 
-          {/* Category Progress */}
-          <Card>
-            <CardHeader className="bg-slate-50 border-b">
-              <CardTitle>Learning Categories</CardTitle>
-              <CardDescription>Your progress across different skill areas</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-6">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center text-red-600">
-                      <Heart className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-red-700">Personal Growth</div>
-                      <div className="text-xs text-muted-foreground">Connect your project to your values</div>
-                    </div>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Funding</CardTitle>
+                <CardDescription>Your funding status</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-4 text-center">
+                  <div className="rounded-full bg-sew-midnight-blue/10 p-3">
+                    <DollarSign className="h-8 w-8 text-sew-midnight-blue" />
                   </div>
-                  <Badge
-                    variant={personalProgress > 0 ? "default" : "outline"}
-                    className={personalProgress > 0 ? "bg-red-100 text-red-700 hover:bg-red-100 border-red-200" : ""}
-                  >
-                    {personalProgress}%
-                  </Badge>
+                  <p className="mt-2 text-2xl font-bold">{formatCurrency(10000)}</p>
+                  <p className="text-xs text-muted-foreground">Total funding received</p>
+                  <div className="mt-4 w-full space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>Budget utilized</span>
+                      <span>45%</span>
+                    </div>
+                    <Progress value={45} className="h-1" />
+                  </div>
                 </div>
-                <Progress value={personalProgress} className="h-2 bg-red-100">
-                  <div className="h-full bg-red-500 rounded-full" style={{ width: `${personalProgress}%` }}></div>
-                </Progress>
-              </div>
+              </CardContent>
+              <CardFooter>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/dashboard/funding">
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    View Funding
+                  </Link>
+                </Button>
+              </CardFooter>
+            </Card>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                      <Users className="h-4 w-4" />
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Community</CardTitle>
+                <CardDescription>Your network</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-4 text-center">
+                  <div className="flex -space-x-2">
+                    <div className="h-10 w-10 rounded-full bg-sew-sunset-orange/20 flex items-center justify-center text-sew-sunset-orange font-medium">
+                      JD
                     </div>
-                    <div>
-                      <div className="font-medium text-blue-700">Community Connection</div>
-                      <div className="text-xs text-muted-foreground">Address community needs</div>
+                    <div className="h-10 w-10 rounded-full bg-sew-moss-green/20 flex items-center justify-center text-sew-moss-green font-medium">
+                      AS
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-sew-sky-blue/20 flex items-center justify-center text-sew-sky-blue font-medium">
+                      MT
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-sew-midnight-blue/20 flex items-center justify-center text-sew-midnight-blue font-medium">
+                      +3
                     </div>
                   </div>
-                  <Badge
-                    variant={communityProgress > 0 ? "default" : "outline"}
-                    className={
-                      communityProgress > 0 ? "bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200" : ""
-                    }
-                  >
-                    {communityProgress}%
-                  </Badge>
-                </div>
-                <Progress value={communityProgress} className="h-2 bg-blue-100">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: `${communityProgress}%` }}></div>
-                </Progress>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-                      <Lightbulb className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-amber-700">Project Development</div>
-                      <div className="text-xs text-muted-foreground">Design your project</div>
-                    </div>
-                  </div>
-                  <Badge
-                    variant={projectProgress > 0 ? "default" : "outline"}
-                    className={
-                      projectProgress > 0 ? "bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200" : ""
-                    }
-                  >
-                    {projectProgress}%
-                  </Badge>
-                </div>
-                <Progress value={projectProgress} className="h-2 bg-amber-100">
-                  <div className="h-full bg-amber-500 rounded-full" style={{ width: `${projectProgress}%` }}></div>
-                </Progress>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                      <MapPin className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-green-700">Cultural Connection</div>
-                      <div className="text-xs text-muted-foreground">Honor cultural knowledge</div>
-                    </div>
-                  </div>
-                  <Badge
-                    variant={culturalProgress > 0 ? "default" : "outline"}
-                    className={
-                      culturalProgress > 0 ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200" : ""
-                    }
-                  >
-                    {culturalProgress}%
-                  </Badge>
-                </div>
-                <Progress value={culturalProgress} className="h-2 bg-green-100">
-                  <div className="h-full bg-green-500 rounded-full" style={{ width: `${culturalProgress}%` }}></div>
-                </Progress>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                      <Briefcase className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-purple-700">Business Skills</div>
-                      <div className="text-xs text-muted-foreground">Build practical skills</div>
-                    </div>
-                  </div>
-                  <Badge
-                    variant={businessProgress > 0 ? "default" : "outline"}
-                    className={
-                      businessProgress > 0 ? "bg-purple-100 text-purple-700 hover:bg-purple-100 border-purple-200" : ""
-                    }
-                  >
-                    {businessProgress}%
-                  </Badge>
-                </div>
-                <Progress value={businessProgress} className="h-2 bg-purple-100">
-                  <div className="h-full bg-purple-500 rounded-full" style={{ width: `${businessProgress}%` }}></div>
-                </Progress>
-              </div>
-            </CardContent>
-            <CardFooter className="bg-slate-50 border-t">
-              <Button variant="outline" className="w-full" asChild>
-                <Link href="/dashboard/learning">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Go to Learning Journey
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-
-        {/* Right Column */}
-        <div className="md:col-span-3 space-y-6">
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader className="bg-slate-50 border-b">
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Your latest actions and achievements</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-center gap-3 p-4 hover:bg-slate-50/50 transition-colors">
-                    <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
-                      {activity.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{activity.title}</p>
-                      <p className="text-xs text-muted-foreground">{activity.date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Deadlines */}
-          <Card>
-            <CardHeader className="bg-slate-50 border-b">
-              <CardTitle>Upcoming Deadlines</CardTitle>
-              <CardDescription>Tasks and milestones to keep in mind</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {upcomingDeadlines.map((deadline, index) => (
-                  <div key={index} className="flex items-center gap-3 p-4 hover:bg-slate-50/50 transition-colors">
-                    <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
-                      {deadline.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{deadline.title}</p>
-                      <p className="text-xs text-muted-foreground">{deadline.date}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Funding Summary */}
-          <Card>
-            <CardHeader className="pb-2 bg-slate-50 border-b">
-              <CardTitle>Funding Summary</CardTitle>
-              <CardDescription>Your micro-grant progress</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                      <DollarSign className="h-5 w-5" />
-                    </div>
-                    <span className="text-2xl font-bold text-green-700">${unlockedFunding}</span>
-                  </div>
-                  <Badge variant="outline" className="text-sm bg-green-50 text-green-700 border-green-200">
-                    of ${totalPotentialFunding} potential
-                  </Badge>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-green-700">Funding Progress</span>
-                    <span className="font-medium text-green-700">{fundingProgress}%</span>
-                  </div>
-                  <Progress value={fundingProgress} className="h-2 bg-green-100">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${fundingProgress}%` }}></div>
-                  </Progress>
-                </div>
-
-                <div className="rounded-md border border-green-200 p-3 bg-green-50/50">
-                  <h4 className="text-sm font-medium mb-1 text-green-700">Next Milestone</h4>
-                  <p className="text-xs text-green-600 mb-2">Complete 3 more tasks to unlock $250 in funding</p>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-green-700">$250</span>
-                    <Badge variant="outline" className="text-xs bg-white text-green-700 border-green-200">
-                      <Clock className="mr-1 h-3 w-3" />
-                      In progress
+                  <p className="mt-4 text-sm font-medium">7 Active Connections</p>
+                  <div className="mt-2 flex items-center justify-center gap-2">
+                    <Badge variant="outline" className="bg-sew-sky-blue/10 text-sew-sky-blue border-sew-sky-blue/20">
+                      3 Mentors
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className="bg-sew-sunset-orange/10 text-sew-sunset-orange border-sew-sunset-orange/20"
+                    >
+                      4 Peers
                     </Badge>
                   </div>
                 </div>
+              </CardContent>
+              <CardFooter>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/dashboard/community">
+                    <Users className="mr-2 h-4 w-4" />
+                    View Community
+                  </Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="projects" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Project Overview</CardTitle>
+              <CardDescription>Status of all your projects</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <Skeleton className="h-5 w-[200px]" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-2 w-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : projects.length > 0 ? (
+                <div className="space-y-6">
+                  {projects.map((project) => {
+                    const progress =
+                      project.tasks.length > 0
+                        ? Math.round(
+                            (project.tasks.filter((t) => t.status === "completed").length / project.tasks.length) * 100,
+                          )
+                        : 0
+
+                    return (
+                      <div key={project.id} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <h3 className="font-medium">{project.title}</h3>
+                            <Badge className="ml-2" variant="outline">
+                              {project.status}
+                            </Badge>
+                          </div>
+                          <Button asChild variant="ghost" size="sm">
+                            <Link href={`/dashboard/projects/${project.id}`}>
+                              <span className="sr-only">View project</span>
+                              <ArrowUpRight className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{project.description}</p>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Progress</span>
+                            <span>{progress}%</span>
+                          </div>
+                          <Progress value={progress} className="h-2" />
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center">
+                            <Calendar className="mr-1 h-3 w-3" />
+                            <span>
+                              {format(new Date(project.startDate), "MMM d, yyyy")}
+                              {project.endDate ? ` - ${format(new Date(project.endDate), "MMM d, yyyy")}` : ""}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <FileText className="mr-1 h-3 w-3" />
+                            <span>
+                              {project.tasks.filter((t) => t.status === "completed").length}/{project.tasks.length}{" "}
+                              tasks
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <Users className="mr-1 h-3 w-3" />
+                            <span>{project.collaborators.length} team members</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Briefcase className="h-10 w-10 text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground mb-4">No projects found</p>
+                  <Button asChild>
+                    <Link href="/dashboard/projects/new">Create your first project</Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button asChild className="w-full">
+                <Link href="/dashboard/projects">View All Projects</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="deadlines" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming Deadlines</CardTitle>
+              <CardDescription>Tasks and milestones due soon</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton className="h-12 w-12 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-[200px]" />
+                        <Skeleton className="h-4 w-[160px]" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : deadlines.length > 0 ? (
+                <div className="space-y-4">
+                  {deadlines.map((deadline) => {
+                    const isUrgent = isBefore(new Date(deadline.dueDate), addDays(new Date(), 3))
+                    const isPast = isBefore(new Date(deadline.dueDate), new Date())
+
+                    return (
+                      <div key={`${deadline.type}-${deadline.id}`} className="flex items-start space-x-4">
+                        <div
+                          className={`mt-0.5 rounded-full p-2 
+                          ${
+                            isPast
+                              ? "bg-red-100 text-red-800"
+                              : isUrgent
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-sew-sky-blue/10 text-sew-sky-blue"
+                          }`}
+                        >
+                          {isPast ? (
+                            <AlertTriangle className="h-4 w-4" />
+                          ) : isUrgent ? (
+                            <Clock className="h-4 w-4" />
+                          ) : (
+                            <Calendar className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-medium leading-none">{deadline.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {deadline.projectTitle} · {deadline.type}
+                          </p>
+                          <div className="flex items-center pt-1">
+                            <Badge
+                              variant="outline"
+                              className={`mr-2 ${
+                                isPast
+                                  ? "bg-red-100 text-red-800 border-red-200"
+                                  : isUrgent
+                                    ? "bg-amber-100 text-amber-800 border-amber-200"
+                                    : ""
+                              }`}
+                            >
+                              {isPast ? "Overdue" : isUrgent ? "Urgent" : "Upcoming"}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              Due {format(new Date(deadline.dueDate), "MMM d, yyyy")}
+                            </span>
+                          </div>
+                        </div>
+                        <Button asChild variant="ghost" size="sm" className="ml-auto">
+                          <Link href={`/dashboard/projects/${deadline.projectId}`}>
+                            <span className="sr-only">View</span>
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <CheckCircle2 className="h-10 w-10 text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">No upcoming deadlines</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="learning" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Learning Modules</CardTitle>
+              <CardDescription>Your learning journey</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Project Management Fundamentals</h3>
+                    <Badge
+                      variant="outline"
+                      className="bg-sew-moss-green/10 text-sew-moss-green border-sew-moss-green/20"
+                    >
+                      Completed
+                    </Badge>
+                  </div>
+                  <Progress value={100} className="h-2" />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Financial Management</h3>
+                    <Badge
+                      variant="outline"
+                      className="bg-sew-sunset-orange/10 text-sew-sunset-orange border-sew-sunset-orange/20"
+                    >
+                      In Progress
+                    </Badge>
+                  </div>
+                  <Progress value={65} className="h-2" />
+                  <p className="text-xs text-muted-foreground">4 of 6 lessons completed</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Community Engagement</h3>
+                    <Badge variant="outline" className="bg-sew-sky-blue/10 text-sew-sky-blue border-sew-sky-blue/20">
+                      In Progress
+                    </Badge>
+                  </div>
+                  <Progress value={30} className="h-2" />
+                  <p className="text-xs text-muted-foreground">2 of 5 lessons completed</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Grant Writing</h3>
+                    <Badge variant="outline">Not Started</Badge>
+                  </div>
+                  <Progress value={0} className="h-2" />
+                </div>
               </div>
             </CardContent>
-            <CardFooter className="bg-slate-50 border-t">
-              <Button variant="outline" className="w-full" asChild>
-                <Link href="/dashboard/funding">
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  View Funding Details
+            <CardFooter>
+              <Button asChild className="w-full">
+                <Link href="/dashboard/learning">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Continue Learning
                 </Link>
               </Button>
             </CardFooter>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
+    </>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <DashboardShell>
+      <ProjectsProvider>
+        <ExpensesProvider>
+          <DashboardContent />
+        </ExpensesProvider>
+      </ProjectsProvider>
     </DashboardShell>
   )
 }

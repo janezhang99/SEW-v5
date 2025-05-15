@@ -1,196 +1,244 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
-import { AICompanionProvider } from "@/components/ai-companion/ai-companion-context"
-import { AICompanion } from "@/components/ai-companion/ai-companion"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { usePathname } from "next/navigation"
 import {
-  LayoutDashboard,
   BookOpen,
+  Calendar,
   DollarSign,
+  Home,
+  MessageSquare,
   Users,
-  Settings,
+  Receipt,
+  Briefcase,
   Menu,
   X,
-  LogOut,
-  Home,
   ChevronRight,
-  Bell,
+  Settings,
 } from "lucide-react"
-import { usePathname } from "next/navigation"
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { AICompanionProvider } from "@/components/ai-companion/ai-companion-context"
+import { AICompanion } from "@/components/ai-companion/ai-companion"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Progress } from "@/components/ui/progress"
+import { useTasks } from "@/contexts/tasks-context"
+
+interface NavItem {
+  title: string
+  href: string
+  icon: React.ElementType
+  color: string
+  description: string
+}
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  className?: string
 }
 
-export function DashboardLayout({ children, className }: DashboardLayoutProps) {
-  const currentPath = usePathname()
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isMobile, setIsMobile] = useState(false)
-  const [showSidebar, setShowSidebar] = useState(true)
   const [showAssistant, setShowAssistant] = useState(true)
+  const [isNavOpen, setIsNavOpen] = useState(false)
+  const pathname = usePathname()
+  const { getCompletedTasks, tasks } = useTasks()
+
+  // Calculate overall progress
+  const completedTasks = getCompletedTasks()
+  const progressPercentage = tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0
 
   // Check if we're on mobile
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 1024)
-      if (window.innerWidth < 1024) {
-        setShowSidebar(false)
+      setIsMobile(window.innerWidth < 768)
+      if (window.innerWidth < 768) {
         setShowAssistant(false)
-      } else {
-        setShowSidebar(true)
-        setShowAssistant(true)
+        setIsNavOpen(false)
       }
+    }
+
+    const handleToggleAssistant = () => {
+      setShowAssistant((prev) => !prev)
     }
 
     checkIfMobile()
     window.addEventListener("resize", checkIfMobile)
-    return () => window.removeEventListener("resize", checkIfMobile)
+    window.addEventListener("toggleAssistant", handleToggleAssistant)
+
+    return () => {
+      window.removeEventListener("resize", checkIfMobile)
+      window.removeEventListener("toggleAssistant", handleToggleAssistant)
+    }
   }, [])
 
-  const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-    { href: "/dashboard/learning", label: "Learning", icon: <BookOpen className="h-5 w-5" /> },
-    { href: "/dashboard/funding", label: "Funding", icon: <DollarSign className="h-5 w-5" /> },
-    { href: "/dashboard/community", label: "Community", icon: <Users className="h-5 w-5" /> },
-    { href: "/dashboard/settings", label: "Settings", icon: <Settings className="h-5 w-5" /> },
+  const navItems: NavItem[] = [
+    {
+      title: "Dashboard",
+      href: "/dashboard",
+      icon: Home,
+      color: "bg-blue-100 text-blue-700",
+      description: "Overview of your progress and activities",
+    },
+    {
+      title: "Learning",
+      href: "/dashboard/learning",
+      icon: BookOpen,
+      color: "bg-purple-100 text-purple-700",
+      description: "Access learning modules and resources",
+    },
+    {
+      title: "Projects",
+      href: "/dashboard/projects",
+      icon: Briefcase,
+      color: "bg-amber-100 text-amber-700",
+      description: "Manage your ongoing projects",
+    },
+    {
+      title: "Funding",
+      href: "/dashboard/funding",
+      icon: DollarSign,
+      color: "bg-green-100 text-green-700",
+      description: "Track available funding and applications",
+    },
+    {
+      title: "Expenses",
+      href: "/dashboard/expenses",
+      icon: Receipt,
+      color: "bg-red-100 text-red-700",
+      description: "Manage your project expenses",
+    },
+    {
+      title: "Mentorship",
+      href: "/dashboard/mentorship",
+      icon: MessageSquare,
+      color: "bg-indigo-100 text-indigo-700",
+      description: "Connect with mentors and advisors",
+    },
+    {
+      title: "Community",
+      href: "/dashboard/community",
+      icon: Users,
+      color: "bg-pink-100 text-pink-700",
+      description: "Engage with your community",
+    },
+    {
+      title: "Events",
+      href: "/dashboard/events",
+      icon: Calendar,
+      color: "bg-teal-100 text-teal-700",
+      description: "View and manage upcoming events",
+    },
   ]
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-50 w-full border-b bg-white">
-        <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
-          {isMobile && (
-            <button
-              className="mr-2 flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-muted"
-              onClick={() => setShowSidebar(!showSidebar)}
+    <TooltipProvider>
+      <div className="flex min-h-screen flex-col">
+        {/* Mobile navigation toggle */}
+        {isMobile && (
+          <div className="fixed top-4 left-4 z-50">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsNavOpen(!isNavOpen)}
+              className="rounded-full shadow-md"
             >
-              {showSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          )}
-          <div className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">
-              SEW
-            </div>
-            <span className="ml-2 text-xl font-bold">Small Economy Works</span>
-          </div>
-          <div className="ml-auto flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
+              {isNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
+          </div>
+        )}
 
-            {isMobile && (
-              <button
-                className="flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-muted"
-                onClick={() => setShowAssistant(!showAssistant)}
-              >
-                {showAssistant ? "Hide Guide" : "Show Guide"}
-              </button>
+        <div className="flex-1 items-start md:grid md:grid-cols-[220px_1fr] lg:grid-cols-[240px_1fr]">
+          {/* Simplified Navigation Sidebar */}
+          <aside
+            className={cn(
+              "fixed top-0 left-0 z-40 h-full w-[220px] lg:w-[240px] bg-white shadow-lg transition-transform duration-300 ease-in-out",
+              isMobile ? (isNavOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0",
+              "md:sticky md:top-14 md:h-[calc(100vh-3.5rem)] md:shadow-none md:translate-x-0",
             )}
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/">
-                <Home className="h-5 w-5 mr-1" />
-                Home
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm">
-              <LogOut className="h-5 w-5 mr-1" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar navigation */}
-        <aside
-          className={cn(
-            "w-64 border-r bg-white transition-all duration-200 ease-in-out",
-            isMobile ? "fixed inset-y-0 left-0 z-40 pt-16" : "relative",
-            isMobile && !showSidebar ? "-translate-x-full" : "translate-x-0",
-          )}
-        >
-          <div className="flex flex-col gap-2 p-4">
-            <div className="mb-6">
-              <div className="px-4 py-2">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold mx-auto mb-2">
-                  JD
-                </div>
-                <h3 className="text-center font-medium">Jane Doe</h3>
-                <p className="text-center text-xs text-muted-foreground">Entrepreneur</p>
+          >
+            <div className="flex flex-col h-full">
+              {/* User progress section */}
+              <div className="p-4 border-b">
+                <h3 className="text-sm font-medium mb-2">Your Progress</h3>
+                <Progress value={progressPercentage} className="h-2 mb-2" />
+                <p className="text-xs text-gray-500">
+                  {completedTasks.length} of {tasks.length} tasks completed
+                </p>
               </div>
-              <div className="mt-2 px-4">
-                <div className="flex justify-between text-xs mb-1">
-                  <span>Learning Progress</span>
-                  <span>45%</span>
-                </div>
-                <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                  <div className="h-full bg-primary w-[45%] rounded-full"></div>
-                </div>
-              </div>
-            </div>
 
-            {navItems.map((item) => (
-              <Button
-                key={item.href}
-                variant={currentPath === item.href ? "default" : "ghost"}
-                className={cn("justify-start", currentPath === item.href && "text-white")}
-                asChild
-              >
-                <Link href={item.href} className="flex items-center justify-between w-full">
-                  <div className="flex items-center">
-                    {item.icon}
-                    <span className="ml-2">{item.label}</span>
-                  </div>
-                  {currentPath === item.href && <ChevronRight className="h-4 w-4" />}
-                </Link>
-              </Button>
-            ))}
+              {/* Navigation items */}
+              <nav className="flex-1 overflow-y-auto p-2">
+                <div className="space-y-1">
+                  {navItems.map((item) => {
+                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
 
-            <div className="mt-auto pt-6">
-              <div className="rounded-lg bg-slate-100 p-4">
-                <h4 className="font-medium text-sm mb-2">Need Help?</h4>
-                <p className="text-xs text-muted-foreground mb-3">Ask your AI guide or contact our support team</p>
-                <Button size="sm" className="w-full">
-                  Contact Support
+                    return (
+                      <Tooltip key={item.href} delayDuration={300}>
+                        <TooltipTrigger asChild>
+                          <a
+                            href={item.href}
+                            className={cn(
+                              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                              isActive
+                                ? "bg-gray-100 text-gray-900 font-medium"
+                                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900",
+                            )}
+                          >
+                            <div className={cn("p-1 rounded-md", item.color)}>
+                              <item.icon className="h-5 w-5" />
+                            </div>
+                            <span className="flex-1">{item.title}</span>
+                            {isActive && <ChevronRight className="h-4 w-4" />}
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p>{item.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )
+                  })}
+                </div>
+              </nav>
+
+              {/* Bottom section with settings and help */}
+              <div className="p-4 border-t space-y-2">
+                <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                  <a href="/dashboard/settings">
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </a>
+                </Button>
+                <Button variant="outline" className="w-full justify-start gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Get Help</span>
                 </Button>
               </div>
             </div>
-          </div>
-        </aside>
+          </aside>
 
-        {/* Main content area */}
-        <div
-          className={cn(
-            "flex flex-1 overflow-auto",
-            isMobile && showSidebar ? "opacity-50 pointer-events-none" : "opacity-100",
-          )}
-        >
-          <div className={cn("flex-1 overflow-auto p-4 sm:p-6 lg:p-8", isMobile && showAssistant ? "hidden" : "block")}>
-            {children}
-          </div>
+          <div className="flex flex-1 flex-col md:flex-row">
+            {/* Main content area */}
+            <div className={cn("flex-1", isMobile && showAssistant ? "hidden" : "block")}>{children}</div>
 
-          {/* AI Assistant panel */}
-          <div
-            className={cn(
-              "border-l w-[400px] overflow-auto bg-white",
-              isMobile && !showAssistant ? "hidden" : "block",
-              isMobile ? "fixed inset-y-0 right-0 z-40 pt-16 w-full sm:w-[350px]" : "",
-            )}
-          >
-            <div className="h-full p-4">
-              <AICompanionProvider>
-                <AICompanion />
-              </AICompanionProvider>
+            {/* AI Assistant panel */}
+            <div
+              className={cn(
+                "border-l md:w-[400px] lg:w-[450px]",
+                isMobile && !showAssistant ? "hidden" : "block",
+                isMobile ? "h-[calc(100vh-64px)]" : "",
+              )}
+            >
+              <div className="h-full p-4">
+                <AICompanionProvider>
+                  <AICompanion />
+                </AICompanionProvider>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }

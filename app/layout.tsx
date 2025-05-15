@@ -1,17 +1,63 @@
 import type React from "react"
 import "@/app/globals.css"
+import { Mona_Sans as FontSans } from "next/font/google"
+import localFont from "next/font/local"
 import { ThemeProvider } from "@/components/theme-provider"
+import { GlobalSearch } from "@/components/global-search"
+import { Suspense } from "react"
 import { AICompanionProvider } from "@/components/ai-companion/ai-companion-context"
 import { TasksProvider } from "@/contexts/tasks-context"
+import { ProjectsProvider } from "@/contexts/projects-context"
+import { ExpensesProvider } from "@/contexts/expenses-context"
+import { cn } from "@/lib/utils"
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+const fontSans = FontSans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
+
+const fontHeading = localFont({
+  src: "../assets/fonts/CalSans-SemiBold.woff2",
+  variable: "--font-heading",
+})
+
+interface RootLayoutProps {
+  children: React.ReactNode
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <TasksProvider>
-            <AICompanionProvider>{children}</AICompanionProvider>
-          </TasksProvider>
+      <head />
+      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable, fontHeading.variable)}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <ProjectsProvider>
+            <ExpensesProvider>
+              <TasksProvider>
+                <AICompanionProvider>
+                  <div className="relative flex min-h-screen flex-col">
+                    <header className="sticky top-0 z-40 border-b bg-background">
+                      <div className="container flex h-14 items-center">
+                        <div className="mr-4 flex">
+                          <a href="/" className="mr-6 flex items-center space-x-2">
+                            <span className="font-bold">Small Economy Works</span>
+                          </a>
+                        </div>
+                        <div className="flex flex-1 items-center justify-end space-x-2">
+                          <nav className="flex items-center space-x-2">
+                            <Suspense>
+                              <GlobalSearch />
+                            </Suspense>
+                          </nav>
+                        </div>
+                      </div>
+                    </header>
+                    <div className="flex-1">{children}</div>
+                  </div>
+                </AICompanionProvider>
+              </TasksProvider>
+            </ExpensesProvider>
+          </ProjectsProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -28,16 +28,6 @@ const config = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -63,17 +53,21 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Custom theme colors
+        // SEW brand colors
         sew: {
-          blue: "#0ea5e9",
-          purple: "#8b5cf6",
-          pink: "#ec4899",
-          orange: "#f97316",
-          green: "#10b981",
-          red: "#ef4444",
-          yellow: "#f59e0b",
-          teal: "#14b8a6",
-          indigo: "#6366f1",
+          // Primary colors
+          "midnight-blue": "#002C7E",
+          "sunset-orange": "#FF6B01",
+          // Secondary colors
+          "moss-green": "#6B8E23",
+          "sky-blue": "#87CEEB",
+          "warm-gray": "#A9AAA9",
+          // Avatar-specific colors for consistency
+          fireweed: "#FF6B01", // Sunset Orange
+          "labrador-tea": "#6B8E23", // Moss Green
+          yarrow: "#002C7E", // Midnight Blue
+          "dwarf-birch": "#87CEEB", // Sky Blue
+          "arctic-willow": "#A9AAA9", // Warm Gray
         },
       },
       borderRadius: {
