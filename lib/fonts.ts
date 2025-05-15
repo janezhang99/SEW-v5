@@ -1,12 +1,11 @@
-import { Mona_Sans as FontSans } from "next/font/google"
-import localFont from "next/font/local"
+import { Mona_Sans as FontSans, Content as FontHeading } from "next/font/google"
 
 export const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
 })
 
-export const fontHeading = localFont({
-  src: "../assets/fonts/CalSans-SemiBold.woff2",
+export const fontHeading = FontHeading({
+  subsets: ["latin"],
   variable: "--font-heading",
 })

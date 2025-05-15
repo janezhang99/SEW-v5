@@ -1,7 +1,6 @@
 import type React from "react"
 import "@/app/globals.css"
-import { Mona_Sans as FontSans } from "next/font/google"
-import localFont from "next/font/local"
+import { fontSans, fontHeading } from "@/lib/fonts"
 import { ThemeProvider } from "@/components/theme-provider"
 import { GlobalSearch } from "@/components/global-search"
 import { Suspense } from "react"
@@ -10,16 +9,6 @@ import { TasksProvider } from "@/contexts/tasks-context"
 import { ProjectsProvider } from "@/contexts/projects-context"
 import { ExpensesProvider } from "@/contexts/expenses-context"
 import { cn } from "@/lib/utils"
-
-const fontSans = FontSans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-})
-
-const fontHeading = localFont({
-  src: "../assets/fonts/CalSans-SemiBold.woff2",
-  variable: "--font-heading",
-})
 
 interface RootLayoutProps {
   children: React.ReactNode
