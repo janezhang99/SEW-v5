@@ -1,8 +1,6 @@
 import type React from "react"
 import "@/app/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { GlobalSearch } from "@/components/global-search"
-import { Suspense } from "react"
 import { AICompanionProvider } from "@/components/ai-companion/ai-companion-context"
 import { TasksProvider } from "@/contexts/tasks-context"
 import { ProjectsProvider } from "@/contexts/projects-context"
@@ -22,25 +20,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <ExpensesProvider>
               <TasksProvider>
                 <AICompanionProvider>
-                  <div className="relative flex min-h-screen flex-col">
-                    <header className="sticky top-0 z-40 border-b bg-background">
-                      <div className="container flex h-14 items-center">
-                        <div className="mr-4 flex">
-                          <a href="/" className="mr-6 flex items-center space-x-2">
-                            <span className="font-bold">Small Economy Works</span>
-                          </a>
-                        </div>
-                        <div className="flex flex-1 items-center justify-end space-x-2">
-                          <nav className="flex items-center space-x-2">
-                            <Suspense>
-                              <GlobalSearch />
-                            </Suspense>
-                          </nav>
-                        </div>
-                      </div>
-                    </header>
-                    <div className="flex-1">{children}</div>
-                  </div>
+                  <div className="relative flex min-h-screen flex-col">{children}</div>
                 </AICompanionProvider>
               </TasksProvider>
             </ExpensesProvider>

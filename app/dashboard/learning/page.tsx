@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { IndigenousThemeProvider, ThemeSelector } from "@/components/theme/indigenous-theme-provider"
+import { IndigenousThemeProvider } from "@/components/theme/indigenous-theme-provider"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { useTasks } from "@/contexts/tasks-context"
@@ -847,18 +847,6 @@ export default function LearningPage() {
               })}
             </Tabs>
           )}
-        </div>
-
-        <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cultural Theme Settings</CardTitle>
-              <CardDescription>Customize the appearance to reflect your cultural preferences</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ThemeSelector />
-            </CardContent>
-          </Card>
         </div>
       </DashboardShell>
     </IndigenousThemeProvider>

@@ -2,6 +2,8 @@ import { CardFooter } from "@/components/ui/card"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { GlobalSearch } from "@/components/global-search"
+import { Suspense } from "react"
 import {
   ArrowRight,
   DollarSign,
@@ -23,9 +25,8 @@ export default function LandingPage() {
             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">
               SEW
             </div>
-            <span className="ml-2 text-xl font-bold">Small Economy Works</span>
           </div>
-          <nav className="ml-auto flex gap-4 sm:gap-6">
+          <nav className="ml-auto flex items-center gap-4 sm:gap-6">
             <Link href="/about" className="text-sm font-medium transition-colors hover:text-primary">
               About
             </Link>
@@ -35,12 +36,13 @@ export default function LandingPage() {
             <Link href="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
               Dashboard
             </Link>
-          </nav>
-          <div className="ml-4 sm:ml-6">
+            <Suspense fallback={<div className="w-[200px]" />}>
+              <GlobalSearch />
+            </Suspense>
             <Button asChild>
               <Link href="/register">Get Started</Link>
             </Button>
-          </div>
+          </nav>
         </div>
       </header>
 

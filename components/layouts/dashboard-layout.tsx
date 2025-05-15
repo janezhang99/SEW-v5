@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button"
 import { AICompanionProvider } from "@/components/ai-companion/ai-companion-context"
 import { AICompanion } from "@/components/ai-companion/ai-companion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Progress } from "@/components/ui/progress"
 import { useTasks } from "@/contexts/tasks-context"
 
 interface NavItem {
@@ -159,13 +158,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             )}
           >
             <div className="flex flex-col h-full">
-              {/* User progress section */}
-              <div className="p-4 border-b">
-                <h3 className="text-sm font-medium mb-2">Your Progress</h3>
-                <Progress value={progressPercentage} className="h-2 mb-2" />
-                <p className="text-xs text-gray-500">
-                  {completedTasks.length} of {tasks.length} tasks completed
-                </p>
+              {/* SEW Logo */}
+              <div className="p-4 border-b flex items-center justify-center">
+                <a href="/" className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-xl">SEW</span>
+                  </div>
+                  <span className="mt-2 text-sm font-medium text-gray-700">Small Economy Works</span>
+                </a>
               </div>
 
               {/* Navigation items */}

@@ -8,24 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Send,
-  Loader2,
-  ArrowRight,
-  Clock,
-  DollarSign,
-  Lightbulb,
-  Users,
-  Heart,
-  BookOpen,
-  MessageSquare,
-  Settings,
-  HelpCircle,
-  MapPin,
-  Briefcase,
-  Sparkles,
-} from "lucide-react"
+import { Send, Loader2, DollarSign, Lightbulb, Users, Heart, MapPin, Briefcase, Sparkles } from "lucide-react"
 import { useAICompanion } from "./ai-companion-context"
 import { useTasks } from "@/contexts/tasks-context"
 import { AvatarSelector } from "./avatar-selector"
@@ -38,11 +21,10 @@ interface AICompanionProps {
 }
 
 export function AICompanion({ currentStep }: AICompanionProps) {
-  const { state, sendMessage, startModule, setInteractionMode } = useAICompanion()
+  const { state, sendMessage } = useAICompanion()
   const { getTaskById } = useTasks()
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [activeTab, setActiveTab] = useState<"chat" | "learn" | "settings">("chat")
   const pathname = usePathname()
 
   // Detect if we're on a task page
@@ -228,45 +210,6 @@ export function AICompanion({ currentStep }: AICompanionProps) {
     return <span className={`text-xs px-2 py-0.5 rounded-full ${config.color}`}>{config.label}</span>
   }
 
-  const learningModules = [
-    {
-      id: "assessment",
-      name: "Personal Assessment",
-      description: "Discover your entrepreneurial profile",
-      icon: <Heart className="h-4 w-4" />,
-      time: "10 min",
-      color: "bg-gradient-to-r from-pink-400 to-red-500",
-      shadow: "shadow-pink",
-    },
-    {
-      id: "budgetingTutorial",
-      name: "Basic Budgeting",
-      description: "Learn to create a simple project budget",
-      icon: <DollarSign className="h-4 w-4" />,
-      time: "15 min",
-      color: "bg-gradient-to-r from-amber-400 to-orange-500",
-      shadow: "shadow-orange",
-    },
-    {
-      id: "communityNeeds",
-      name: "Community Needs",
-      description: "Identify needs your project can address",
-      icon: <Users className="h-4 w-4" />,
-      time: "20 min",
-      color: "bg-gradient-to-r from-blue-400 to-indigo-500",
-      shadow: "shadow-blue",
-    },
-    {
-      id: "projectVision",
-      name: "Project Vision",
-      description: "Define your project's purpose and goals",
-      icon: <Lightbulb className="h-4 w-4" />,
-      time: "15 min",
-      color: "bg-gradient-to-r from-purple-400 to-indigo-500",
-      shadow: "shadow-purple",
-    },
-  ]
-
   // Get task-specific help topics based on the current path
   const getTaskHelpTopics = () => {
     if (!pathname) return []
@@ -340,11 +283,6 @@ export function AICompanion({ currentStep }: AICompanionProps) {
 
   const taskHelpTopics = getTaskHelpTopics()
 
-  // Get the avatar image path
-  const getAvatarImagePath = () => {
-    return `/avatars/${state.avatar}.svg`
-  }
-
   // Get avatar-specific gradient
   const getAvatarGradient = () => {
     const gradients = {
@@ -386,285 +324,80 @@ export function AICompanion({ currentStep }: AICompanionProps) {
         </div>
       </CardHeader>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col">
-        <TabsList className="grid grid-cols-3 mx-4 p-1 bg-gradient-to-r from-blue-100/50 to-purple-100/50 rounded-lg">
-          <TabsTrigger
-            value="chat"
-            className={cn(
-              "flex items-center gap-1 rounded-md",
-              activeTab === "chat" ? "bg-white shadow-md" : "hover:bg-white/50",
-            )}
-          >
-            <MessageSquare className="h-4 w-4" />
-            <span>Chat</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="learn"
-            className={cn(
-              "flex items-center gap-1 rounded-md",
-              activeTab === "learn" ? "bg-white shadow-md" : "hover:bg-white/50",
-            )}
-          >
-            <BookOpen className="h-4 w-4" />
-            <span>Learn</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="settings"
-            className={cn(
-              "flex items-center gap-1 rounded-md",
-              activeTab === "settings" ? "bg-white shadow-md" : "hover:bg-white/50",
-            )}
-          >
-            <Settings className="h-4 w-4" />
-            <span>Settings</span>
-          </TabsTrigger>
-        </TabsList>
+      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+        {state.conversationHistory.map((message, index) => (
+          <div key={message.id} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
+            <div
+              className={cn(
+                "max-w-[80%] rounded-lg p-3",
+                message.role === "user"
+                  ? `${getAvatarGradient()} text-white ${getAvatarShadow()}`
+                  : message.role === "system"
+                    ? "bg-muted/50 text-muted-foreground text-xs italic"
+                    : "bg-white border shadow-sm",
+              )}
+            >
+              {message.role === "assistant" && message.metadata?.tone && (
+                <div className="flex justify-end mb-1">{renderToneIndicator(message.metadata.tone)}</div>
+              )}
+              <div className="whitespace-pre-line text-sm">{renderMessageContent(message)}</div>
+              <div className="text-xs opacity-70 mt-1 text-right">{formatTimestamp(message.timestamp)}</div>
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </CardContent>
 
-        <TabsContent value="chat" className="flex-1 flex flex-col">
-          <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-            {state.conversationHistory.map((message, index) => (
-              <div key={message.id} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
-                <div
-                  className={cn(
-                    "max-w-[80%] rounded-lg p-3",
-                    message.role === "user"
-                      ? `${getAvatarGradient()} text-white ${getAvatarShadow()}`
-                      : message.role === "system"
-                        ? "bg-muted/50 text-muted-foreground text-xs italic"
-                        : "bg-white border shadow-sm",
-                  )}
-                >
-                  {message.role === "assistant" && message.metadata?.tone && (
-                    <div className="flex justify-end mb-1">{renderToneIndicator(message.metadata.tone)}</div>
-                  )}
-                  <div className="whitespace-pre-line text-sm">{renderMessageContent(message)}</div>
-                  <div className="text-xs opacity-70 mt-1 text-right">{formatTimestamp(message.timestamp)}</div>
-                </div>
-              </div>
+      {/* Task-specific help topics */}
+      {taskHelpTopics.length > 0 && (
+        <div className="px-4 mb-2">
+          <div className="text-xs text-muted-foreground mb-2">Task-specific help:</div>
+          <div className="flex flex-wrap gap-2">
+            {taskHelpTopics.map((topic, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                className="text-xs border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                onClick={() => {
+                  sendMessage(topic.question)
+                }}
+              >
+                {topic.icon}
+                {topic.question}
+              </Button>
             ))}
-            <div ref={messagesEndRef} />
-          </CardContent>
+          </div>
+        </div>
+      )}
 
-          {/* Task-specific help topics */}
-          {taskHelpTopics.length > 0 && (
-            <div className="px-4 mb-2">
-              <div className="text-xs text-muted-foreground mb-2">Task-specific help:</div>
-              <div className="flex flex-wrap gap-2">
-                {taskHelpTopics.map((topic, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
-                    onClick={() => {
-                      sendMessage(topic.question)
-                    }}
-                  >
-                    {topic.icon}
-                    {topic.question}
-                  </Button>
-                ))}
-              </div>
+      <CardFooter className="border-t p-4 gap-2 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="flex flex-col w-full gap-2">
+          <div className="flex gap-2">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="min-h-[60px] flex-1 resize-none border-blue-200 focus-visible:ring-blue-500"
+              onKeyDown={handleKeyDown}
+              disabled={state.isGenerating}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={state.isGenerating || !input.trim()}
+              className={`self-end ${getAvatarGradient()} hover:opacity-90 ${getAvatarShadow()}`}
+            >
+              {state.isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+          {state.isGenerating && (
+            <div className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+              <Sparkles className="h-3 w-3 text-blue-500 animate-pulse" />
+              <span>Thinking...</span>
             </div>
           )}
-
-          <CardFooter className="border-t p-4 gap-2 bg-gradient-to-r from-blue-50 to-purple-50">
-            <div className="flex flex-col w-full gap-2">
-              <div className="flex gap-2">
-                <Textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type your message..."
-                  className="min-h-[60px] flex-1 resize-none border-blue-200 focus-visible:ring-blue-500"
-                  onKeyDown={handleKeyDown}
-                  disabled={state.isGenerating}
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={state.isGenerating || !input.trim()}
-                  className={`self-end ${getAvatarGradient()} hover:opacity-90 ${getAvatarShadow()}`}
-                >
-                  {state.isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
-              </div>
-              {state.isGenerating && (
-                <div className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-                  <Sparkles className="h-3 w-3 text-blue-500 animate-pulse" />
-                  <span>Thinking...</span>
-                </div>
-              )}
-            </div>
-          </CardFooter>
-        </TabsContent>
-
-        <TabsContent value="learn" className="flex-1 overflow-hidden flex flex-col">
-          <CardContent className="flex-1 overflow-y-auto p-4">
-            <div className="mb-4">
-              <h3 className="font-medium text-lg mb-2 bg-clip-text text-transparent bg-gradient-blue-purple">
-                Learning Modules
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Interactive lessons to build your skills and unlock funding
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {learningModules.map((module) => (
-                <div
-                  key={module.id}
-                  className="flex items-center justify-between rounded-md border p-3 hover:bg-blue-50/50 transition-colors cursor-pointer card-hover-effect"
-                  onClick={() => {
-                    startModule(module.id)
-                    setActiveTab("chat")
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`h-10 w-10 rounded-full ${module.color} flex items-center justify-center text-white ${module.shadow}`}
-                    >
-                      {module.icon}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{module.name}</p>
-                      <p className="text-xs text-muted-foreground">{module.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground flex items-center">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {module.time}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-8 w-8 p-0 ${module.color} text-white rounded-full ${module.shadow}`}
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </TabsContent>
-
-        <TabsContent value="settings" className="flex-1 overflow-hidden flex flex-col">
-          <CardContent className="flex-1 overflow-y-auto p-4">
-            <div className="mb-4">
-              <h3 className="font-medium text-lg mb-2 bg-clip-text text-transparent bg-gradient-purple-pink">
-                AI Companion Settings
-              </h3>
-              <p className="text-sm text-muted-foreground">Customize how your AI companion interacts with you</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Communication Style</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { value: "coaching", color: "bg-gradient-to-r from-blue-400 to-indigo-500", shadow: "shadow-blue" },
-                    {
-                      value: "cheerleading",
-                      color: "bg-gradient-to-r from-green-400 to-teal-500",
-                      shadow: "shadow-green",
-                    },
-                    {
-                      value: "inquiry",
-                      color: "bg-gradient-to-r from-purple-400 to-indigo-500",
-                      shadow: "shadow-purple",
-                    },
-                    {
-                      value: "directive",
-                      color: "bg-gradient-to-r from-amber-400 to-orange-500",
-                      shadow: "shadow-orange",
-                    },
-                    { value: "adaptive", color: "bg-gradient-to-r from-pink-400 to-red-500", shadow: "shadow-pink" },
-                  ].map((tone) => (
-                    <Button
-                      key={tone.value}
-                      variant={state.currentUser?.tonePreference === tone.value ? "default" : "outline"}
-                      className={cn(
-                        "justify-start capitalize",
-                        state.currentUser?.tonePreference === tone.value
-                          ? `${tone.color} text-white ${tone.shadow}`
-                          : "hover:bg-blue-50 border-blue-200",
-                      )}
-                      onClick={() => {
-                        if (state.currentUser) {
-                          // In a real app, this would update the user profile
-                          console.log(`Setting tone preference to ${tone.value}`)
-                        }
-                      }}
-                    >
-                      <span>{tone.value}</span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Help Topics</label>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
-                    onClick={() => {
-                      sendMessage("How does the micro-grant funding work?")
-                      setActiveTab("chat")
-                    }}
-                  >
-                    <HelpCircle className="h-4 w-4 mr-2" />
-                    How does funding work?
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
-                    onClick={() => {
-                      sendMessage("What kinds of projects qualify for funding?")
-                      setActiveTab("chat")
-                    }}
-                  >
-                    <HelpCircle className="h-4 w-4 mr-2" />
-                    What projects qualify?
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
-                    onClick={() => {
-                      sendMessage("How can I get help from a human mentor?")
-                      setActiveTab("chat")
-                    }}
-                  >
-                    <HelpCircle className="h-4 w-4 mr-2" />
-                    Connect with a human mentor
-                  </Button>
-                </div>
-              </div>
-
-              <div className="rounded-md border border-purple-200 p-4 bg-gradient-to-r from-purple-50 to-pink-50">
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center text-white shadow-purple">
-                    <HelpCircle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-1 text-purple-700">Need more help?</h4>
-                    <p className="text-sm text-purple-600">
-                      If you need assistance from a human team member, you can request help at any time.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 border-purple-200 bg-white text-purple-700 hover:bg-purple-50"
-                    >
-                      Request Human Support
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </CardFooter>
     </Card>
   )
 }
