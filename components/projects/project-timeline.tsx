@@ -1,87 +1,85 @@
-"use client"
+import { CalendarDays, CheckCircle2, Clock, AlertCircle } from "lucide-react"
 
-import { useProjects } from "@/contexts/projects-context"
-import { Card } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import { CheckCircle2, Circle } from "lucide-react"
-
-interface ProjectTimelineProps {
-  projectId: string
-}
-
-export function ProjectTimeline({ projectId }: ProjectTimelineProps) {
-  const { getProject } = useProjects()
-  const project = getProject(projectId)
-
-  if (!project) return null
-
-  // Combine tasks and milestones into a single timeline
-  const timelineItems = [
-    ...project.tasks.map((task) => ({
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      date: task.dueDate,
-      type: "task" as const,
-      status: task.status,
-    })),
-    ...project.milestones.map((milestone) => ({
-      id: milestone.id,
-      title: milestone.title,
-      description: milestone.description,
-      date: milestone.dueDate,
-      type: "milestone" as const,
-      status: milestone.completed ? "completed" : "todo",
-    })),
+export function ProjectTimeline() {
+  // Mock timeline data
+  const timelineEvents = [
+    {
+      id: "1",
+      date: "January 2023",
+      title: "Project Kickoff",
+      description: "Initial team meeting and project planning",
+      status: "completed",
+    },
+    {
+      id: "2",
+      date: "March 2023",
+      title: "Community Consultation",
+      description: "Gathering input from local residents and businesses",
+      status: "completed",
+    },
+    {
+      id: "3",
+      date: "June 2023",
+      title: "Draft Plan Completion",
+      description: "Finalization of implementation strategy",
+      status: "completed",
+    },
+    {
+      id: "4",
+      date: "September 2023",
+      title: "Implementation Begins",
+      description: "Start of green infrastructure installation",
+      status: "in-progress",
+    },
+    {
+      id: "5",
+      date: "February 2024",
+      title: "Mid-project Review",
+      description: "Assessment of progress and adjustments",
+      status: "upcoming",
+    },
+    {
+      id: "6",
+      date: "December 2025",
+      title: "Project Completion",
+      description: "Final evaluation and reporting",
+      status: "upcoming",
+    },
   ]
-    .filter((item) => item.date) // Only include items with dates
-    .sort((a, b) => {
-      if (!a.date) return 1
-      if (!b.date) return -1
-      return new Date(a.date).getTime() - new Date(b.date).getTime()
-    })
 
-  if (timelineItems.length === 0) {
-    return (
-      <Card className="p-6 text-center">
-        <p className="text-muted-foreground">No timeline items available.</p>
-        <p className="text-sm text-muted-foreground">Add tasks or milestones with due dates to see them here.</p>
-      </Card>
-    )
+  // Function to get the appropriate icon based on status
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircle2 className="h-5 w-5 text-green-500" />
+      case "in-progress":
+        return <Clock className="h-5 w-5 text-blue-500" />
+      case "upcoming":
+        return <CalendarDays className="h-5 w-5 text-gray-400" />
+      case "delayed":
+        return <AlertCircle className="h-5 w-5 text-amber-500" />
+      default:
+        return <CalendarDays className="h-5 w-5 text-gray-400" />
+    }
   }
 
   return (
-    <div className="relative space-y-4 pl-6 before:absolute before:inset-y-0 before:left-2 before:w-px before:bg-border">
-      {timelineItems.map((item, index) => (
-        <div key={`${item.type}-${item.id}`} className="relative">
-          <div
-            className={cn(
-              "absolute left-[-24px] flex h-6 w-6 items-center justify-center rounded-full border bg-background",
-              item.status === "completed" ? "text-primary" : "text-muted-foreground",
-            )}
-          >
-            {item.status === "completed" ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <p className={cn("font-medium", item.status === "completed" && "line-through opacity-70")}>
-                {item.title}
-              </p>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-                {item.type === "milestone" ? "Milestone" : "Task"}
-              </span>
+    <div className="relative">
+      <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border"></div>
+      <div className="space-y-8">
+        {timelineEvents.map((event) => (
+          <div key={event.id} className="relative pl-10">
+            <div className="absolute left-0 top-1 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background border">
+              {getStatusIcon(event.status)}
             </div>
-            <p
-              className={cn("text-sm text-muted-foreground", item.status === "completed" && "line-through opacity-70")}
-            >
-              {item.description}
-            </p>
-            {item.date && (
-              <p className="text-xs text-muted-foreground">Due: {new Date(item.date).toLocaleDateString()}</p>
-            )}
+            <div>
+              <div className="text-sm text-muted-foreground">{event.date}</div>
+              <h3 className="text-lg font-semibold">{event.title}</h3>
+              <p className="text-muted-foreground">{event.description}</p>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
