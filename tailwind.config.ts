@@ -53,15 +53,21 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
-          accent: {
-            DEFAULT: "hsl(var(--sidebar-accent))",
-            foreground: "hsl(var(--sidebar-accent-foreground))",
-          },
+        // SEW brand colors
+        sew: {
+          // Primary colors
+          "midnight-blue": "#002C7E",
+          "sunset-orange": "#FF6B01",
+          // Secondary colors
+          "moss-green": "#6B8E23",
+          "sky-blue": "#87CEEB",
+          "warm-gray": "#A9AAA9",
+          // Avatar-specific colors for consistency
+          fireweed: "#FF6B01", // Sunset Orange
+          "labrador-tea": "#6B8E23", // Moss Green
+          yarrow: "#002C7E", // Midnight Blue
+          "dwarf-birch": "#87CEEB", // Sky Blue
+          "arctic-willow": "#A9AAA9", // Warm Gray
         },
       },
       borderRadius: {
@@ -82,6 +88,12 @@ const config = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "hero-pattern": "url('/patterns/hero-pattern.svg')",
+        "dot-pattern": "url('/patterns/dot-pattern.svg')",
+        "wave-pattern": "url('/patterns/wave-pattern.svg')",
       },
     },
   },

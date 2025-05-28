@@ -1,489 +1,403 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import type React from "react"
+
+import { useState, useEffect, useRef } from "react"
+import { usePathname } from "next/navigation"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Bot,
-  X,
-  Send,
-  Sparkles,
-  BookOpen,
-  Lightbulb,
-  Zap,
-  ArrowLeft,
-  ExternalLink,
-  Minimize2,
-  Maximize2,
-} from "lucide-react"
-import { useAICompanion } from "./ai-companion-provider"
-import type { AICompanionMessage } from "@/types/ai-companion"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Send, Loader2, DollarSign, Lightbulb, Users, Heart, MapPin, Briefcase, Sparkles } from "lucide-react"
+import { useAICompanion } from "./ai-companion-context"
+import { useTasks } from "@/contexts/tasks-context"
+import { AvatarSelector } from "./avatar-selector"
+import type { Message, TonePreference } from "./types"
 import { cn } from "@/lib/utils"
-import { AICompanionFlowSelector } from "./ai-companion-flow-selector"
-import { AICompanionSettings } from "./ai-companion-settings"
-import { AICompanionCards } from "./ai-companion-cards"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { useAIBridge, AIBridgeProvider } from "@/components/ai-bridge/ai-systems-bridge"
-import { AnimatePresence, motion } from "framer-motion"
 
+// Add this to the existing component's props
 interface AICompanionProps {
-  isPinned?: boolean
+  currentStep?: string
 }
 
-// Create a wrapper component that provides AIBridgeProvider if needed
-function AICompanionWithBridge(props: AICompanionProps) {
-  const [hasBridge, setHasBridge] = useState(false)
-  const [aiBridge, setAiBridge] = useState<ReturnType<typeof useAIBridge> | null>(null)
-
-  useEffect(() => {
-    try {
-      // Try to use the AIBridge context
-      const bridge = useAIBridge()
-      // If we get here, we have a bridge context
-      setAiBridge(bridge)
-      setHasBridge(true)
-    } catch (e) {
-      // If we get an error, we need to wrap it in an AIBridgeProvider
-      setHasBridge(false)
-      setAiBridge(null)
-    }
-  }, [])
-
-  if (hasBridge === null) {
-    // Still determining if we have a bridge
-    return null // Or a loading indicator
-  }
-
-  if (hasBridge) {
-    return <AICompanionInner {...props} aiBridge={aiBridge} />
-  } else {
-    return (
-      <AIBridgeProvider>
-        <AICompanionInner {...props} aiBridge={null} />
-      </AIBridgeProvider>
-    )
-  }
-}
-
-// The inner component that uses the AIBridge
-function AICompanionInner({
-  isPinned = false,
-  aiBridge,
-}: AICompanionProps & { aiBridge: ReturnType<typeof useAIBridge> | null }) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(false)
-  const [hasInitialized, setHasInitialized] = useState(false)
-
-  const {
-    isOpen,
-    openCompanion,
-    closeCompanion,
-    messages,
-    addMessage,
-    isLoading,
-    setIsLoading,
-    currentFlow,
-    mode,
-    tone,
-    currentFramework,
-    activeFlow,
-    setActiveFlow,
-  } = useAICompanion()
-
-  // If pinned, ensure the companion is open - but only after initial render
-  useEffect(() => {
-    if (isPinned && !isOpen && hasInitialized) {
-      openCompanion()
-    }
-    // Set initialization flag after first render
-    setHasInitialized(true)
-  }, [isPinned, isOpen, openCompanion, hasInitialized])
-
+export function AICompanion({ currentStep }: AICompanionProps) {
+  const { state, sendMessage } = useAICompanion()
+  const { getTaskById } = useTasks()
   const [input, setInput] = useState("")
-  const [activeView, setActiveView] = useState<"chat" | "cards" | "flows" | "settings">("chat")
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [suggestProjectAssistant, setSuggestProjectAssistant] = useState(false)
-  const [currentProject, setCurrentProjectLocal] = useState<any>(null)
+  const pathname = usePathname()
 
-  // Scroll to bottom when messages change
-  const scrollToBottom = useCallback(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
-    }
-  }, [messagesEndRef])
-
+  // Detect if we're on a task page
   useEffect(() => {
-    scrollToBottom()
-  }, [messages, scrollToBottom])
+    if (pathname) {
+      const pathParts = pathname.split("/")
+      if (pathParts.length >= 5 && pathParts[1] === "dashboard" && pathParts[2] === "learning") {
+        const category = pathParts[3]
+        const taskId = pathParts[4]
 
-  // Update last interaction when the component is opened
+        // If we have a task ID, provide contextual help
+        if (taskId && state.conversationHistory.length <= 1) {
+          const task = getTaskById(taskId)
+          if (task) {
+            const contextualMessage = `I see you're working on the "${task.name}" task. This task is about ${task.description.toLowerCase()}. I'm here to help you complete it successfully. Would you like some guidance on how to approach this task?`
+            sendMessage(contextualMessage, true)
+          }
+        }
+      }
+    }
+  }, [pathname, state.conversationHistory.length, sendMessage, getTaskById])
+
+  // Add this near the top of the component
   useEffect(() => {
-    if (isOpen && aiBridge?.updateLastInteraction) {
-      aiBridge.updateLastInteraction()
-    }
-  }, [isOpen, aiBridge])
+    if (currentStep && state.conversationHistory.length <= 1) {
+      // Provide contextual guidance based on the current step
+      const contextualMessages: Record<string, string> = {
+        register:
+          "I see you're creating an account! I'm here to help you get started with Small Economy Works. Feel free to ask me any questions about the registration process or our micro-grant program.",
+        login:
+          "Welcome back! I'm here to help you navigate the platform. Let me know if you need any assistance logging in.",
+        profile:
+          "Creating your profile helps us personalize your experience. The more we know about you and your project interests, the better we can support you!",
+        community:
+          "Tell us about your community! This helps us understand the context of your project and connect you with relevant resources.",
+        interests:
+          "Sharing your interests helps us recommend relevant learning paths and funding opportunities that align with your goals.",
+      }
 
-  // Get project context from AI Bridge if available
+      if (contextualMessages[currentStep]) {
+        // Use sendMessage instead of directly modifying state
+        sendMessage(contextualMessages[currentStep], true)
+      }
+    }
+  }, [currentStep, state.conversationHistory.length, sendMessage])
+
+  // Scroll to bottom of messages when new ones are added
   useEffect(() => {
-    if (aiBridge?.currentProject) {
-      setCurrentProjectLocal(aiBridge.currentProject)
-    }
-  }, [aiBridge])
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [state.conversationHistory])
 
-  const handleSendMessage = useCallback(async () => {
-    if (!input.trim()) return
-
-    // Add user message
-    const userMessage: AICompanionMessage = {
-      role: "user",
-      content: input,
-      timestamp: new Date().toISOString(),
-    }
-
-    addMessage(userMessage)
+  const handleSendMessage = async () => {
+    if (!input.trim() || state.isGenerating) return
+    await sendMessage(input)
     setInput("")
-    setIsLoading(true)
+  }
 
-    // Add to shared history if AI Bridge is available
-    if (aiBridge?.addToSharedHistory) {
-      aiBridge.addToSharedHistory({
-        system: "companion",
-        action: "message-sent",
-        context: { content: input },
-      })
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
     }
+  }
 
-    try {
-      // In a real implementation, this would call an API endpoint
-      // For now, we'll simulate a response
-      setTimeout(() => {
-        const assistantMessage: AICompanionMessage = {
-          role: "assistant",
-          content: generateMockResponse(input, currentFlow, tone),
-          timestamp: new Date().toISOString(),
-        }
+  const formatTimestamp = (date: Date) => {
+    return new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  }
 
-        addMessage(assistantMessage)
-        setIsLoading(false)
+  const renderMessageContent = (message: Message) => {
+    // Split content by newlines and render paragraphs
+    return message.content.split("\n").map((paragraph, i) => {
+      if (paragraph.trim() === "") return <br key={i} />
 
-        // Check if the message contains project-related content
-        const projectKeywords = ["project", "timeline", "stakeholder", "risk", "implementation"]
-        if (
-          projectKeywords.some((keyword) => input.toLowerCase().includes(keyword)) &&
-          currentProject &&
-          !suggestProjectAssistant
-        ) {
-          setSuggestProjectAssistant(true)
-        }
-      }, 1000)
-    } catch (error) {
-      console.error("Error sending message:", error)
-      setIsLoading(false)
-    }
-  }, [input, addMessage, setIsLoading, aiBridge, currentFlow, tone, currentProject, suggestProjectAssistant])
+      // Check if paragraph is a markdown table
+      if (paragraph.includes("|")) {
+        return (
+          <div key={i} className="my-2 overflow-x-auto">
+            {renderMarkdownTable(paragraph)}
+          </div>
+        )
+      }
 
-  const handleProjectAssistantHandoff = useCallback(() => {
-    // Close the companion
-    closeCompanion()
+      // Check if paragraph starts with a markdown list item
+      if (paragraph.trim().startsWith("- ") || paragraph.trim().startsWith("* ")) {
+        return (
+          <li key={i} className="ml-4">
+            {paragraph.trim().substring(2)}
+          </li>
+        )
+      }
 
-    // Hand off to the project assistant if AI Bridge is available
-    if (aiBridge?.handoffToProjectAssistant) {
-      aiBridge.handoffToProjectAssistant(
-        `The user was discussing the ${currentProject?.projectName} project. They might need specialized assistance.`,
+      // Check if paragraph is a heading
+      if (paragraph.startsWith("# ")) {
+        return (
+          <h1 key={i} className="text-xl font-bold my-2">
+            {paragraph.substring(2)}
+          </h1>
+        )
+      }
+
+      if (paragraph.startsWith("## ")) {
+        return (
+          <h2 key={i} className="text-lg font-bold my-2">
+            {paragraph.substring(3)}
+          </h2>
+        )
+      }
+
+      if (paragraph.startsWith("### ")) {
+        return (
+          <h3 key={i} className="text-md font-bold my-2">
+            {paragraph.substring(4)}
+          </h3>
+        )
+      }
+
+      // Handle bold text with **
+      let content = paragraph
+      content = content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+
+      if (content !== paragraph) {
+        return <p key={i} className="mb-2" dangerouslySetInnerHTML={{ __html: content }} />
+      }
+
+      return (
+        <p key={i} className="mb-2">
+          {paragraph}
+        </p>
       )
-    }
+    })
+  }
 
-    // Reset the suggestion flag
-    setSuggestProjectAssistant(false)
-  }, [aiBridge, currentProject, closeCompanion])
+  const renderMarkdownTable = (tableText: string) => {
+    const rows = tableText.split("\n").filter((row) => row.trim() !== "")
+    if (rows.length < 2) return <p>{tableText}</p>
 
-  // If pinned in sidebar, use a different UI
-  if (isPinned) {
-    // Don't try to open the companion during render
-    // We'll handle this in the useEffect
-    if (!isOpen && hasInitialized) {
-      return null
-    }
+    const cells = rows.map((row) =>
+      row
+        .split("|")
+        .filter((cell) => cell.trim() !== "")
+        .map((cell) => cell.trim()),
+    )
 
     return (
-      <div className="flex h-full flex-col">
-        <div className="flex-1">{renderView()}</div>
-      </div>
+      <table className="min-w-full border-collapse text-sm">
+        <thead>
+          <tr>
+            {cells[0].map((header, i) => (
+              <th key={i} className="border border-gray-300 px-4 py-2 bg-gray-100 font-medium">
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {cells.slice(2).map((row, i) => (
+            <tr key={i}>
+              {row.map((cell, j) => (
+                <td key={j} className="border border-gray-300 px-4 py-2">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     )
   }
 
-  if (isMinimized) {
-    return (
-      <Button
-        size="icon"
-        className="h-12 w-12 rounded-full shadow-lg bg-primary text-primary-foreground"
-        onClick={() => setIsMinimized(false)}
-      >
-        <Bot className="h-6 w-6" />
-      </Button>
-    )
+  const renderToneIndicator = (tone?: TonePreference) => {
+    if (!tone || tone === "adaptive") return null
+
+    const toneConfig = {
+      coaching: { label: "Coaching", color: "bg-blue-100 text-blue-800" },
+      cheerleading: { label: "Encouraging", color: "bg-green-100 text-green-800" },
+      inquiry: { label: "Inquiring", color: "bg-purple-100 text-purple-800" },
+      directive: { label: "Guiding", color: "bg-amber-100 text-amber-800" },
+    }
+
+    const config = toneConfig[tone]
+    if (!config) return null
+
+    return <span className={`text-xs px-2 py-0.5 rounded-full ${config.color}`}>{config.label}</span>
   }
 
-  if (!isOpen) return null
+  // Get task-specific help topics based on the current path
+  const getTaskHelpTopics = () => {
+    if (!pathname) return []
 
-  // Render the appropriate view based on activeView state
-  function renderView() {
-    switch (activeView) {
-      case "chat":
-        return (
-          <>
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-64 text-center p-4">
-                    <Bot className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium">How can I help you today?</h3>
-                    <p className="text-muted-foreground mt-2">
-                      I can assist with course recommendations, grant applications, or help you explore climate
-                      adaptation topics.
-                    </p>
-                    <div className="grid grid-cols-1 gap-2 mt-6 w-full">
-                      <Button
-                        variant="outline"
-                        className="justify-start text-left"
-                        onClick={() => setInput("Help me find courses on climate risk assessment")}
-                      >
-                        <BookOpen className="h-4 w-4 mr-2" />
-                        Find relevant courses
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="justify-start text-left"
-                        onClick={() => setInput("What grants are available for municipal adaptation projects?")}
-                      >
-                        <Lightbulb className="h-4 w-4 mr-2" />
-                        Explore funding opportunities
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="justify-start text-left"
-                        onClick={() => setInput("I need help with my community's flood adaptation plan")}
-                      >
-                        <Zap className="h-4 w-4 mr-2" />
-                        Get project assistance
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  messages.map((message, index) => (
-                    <div key={index} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
-                      <div
-                        className={cn(
-                          "max-w-[80%] rounded-lg p-3",
-                          message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
-                        )}
-                      >
-                        {message.content}
-                      </div>
-                    </div>
-                  ))
-                )}
+    const pathParts = pathname.split("/")
+    if (pathParts.length >= 5 && pathParts[1] === "dashboard" && pathParts[2] === "learning") {
+      const category = pathParts[3]
+      const taskId = pathParts[4]
+      const task = getTaskById(taskId)
 
-                {/* Project Assistant Suggestion */}
-                {suggestProjectAssistant && currentProject && (
-                  <Alert className="bg-primary/10 border-primary/20">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <AlertTitle>Project Assistant Available</AlertTitle>
-                    <AlertDescription>
-                      I notice you're discussing the {currentProject.projectName} project. Would you like to use the
-                      specialized Project Assistant?
-                      <div className="mt-2">
-                        <Button size="sm" onClick={handleProjectAssistantHandoff} className="mr-2">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Switch to Project Assistant
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setSuggestProjectAssistant(false)}>
-                          Continue here
-                        </Button>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
+      if (task) {
+        const categoryTopics: Record<string, { question: string; icon: React.ReactNode }[]> = {
+          personal: [
+            {
+              question: "How do I connect my personal values to my project?",
+              icon: <Heart className="h-4 w-4 mr-2" />,
+            },
+            {
+              question: "What makes a compelling personal why statement?",
+              icon: <Heart className="h-4 w-4 mr-2" />,
+            },
+          ],
+          community: [
+            {
+              question: "How do I identify the most important needs in my community?",
+              icon: <Users className="h-4 w-4 mr-2" />,
+            },
+            {
+              question: "How can I engage community members in my project?",
+              icon: <Users className="h-4 w-4 mr-2" />,
+            },
+          ],
+          project: [
+            {
+              question: "How do I create a realistic project timeline?",
+              icon: <Lightbulb className="h-4 w-4 mr-2" />,
+            },
+            {
+              question: "What should I include in my project plan?",
+              icon: <Lightbulb className="h-4 w-4 mr-2" />,
+            },
+          ],
+          cultural: [
+            {
+              question: "How can I incorporate cultural knowledge respectfully?",
+              icon: <MapPin className="h-4 w-4 mr-2" />,
+            },
+            {
+              question: "What are some ways to honor traditional practices in my project?",
+              icon: <MapPin className="h-4 w-4 mr-2" />,
+            },
+          ],
+          business: [
+            {
+              question: "How do I estimate costs for my project?",
+              icon: <Briefcase className="h-4 w-4 mr-2" />,
+            },
+            {
+              question: "What business model would work best for my project?",
+              icon: <Briefcase className="h-4 w-4 mr-2" />,
+            },
+          ],
+        }
 
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-
-            <CardFooter className={cn("p-4 pt-2 border-t", isPinned ? "mt-auto" : "")}>
-              <div className="flex w-full items-center space-x-2">
-                <Input
-                  placeholder="Type your message..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSendMessage()
-                    }
-                  }}
-                  disabled={isLoading}
-                />
-                <Button size="icon" onClick={handleSendMessage} disabled={isLoading}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardFooter>
-          </>
-        )
-      case "cards":
-        return (
-          <div className="flex flex-col h-full">
-            <div className="p-4 border-b flex items-center">
-              <Button variant="ghost" size="icon" onClick={() => setActiveView("chat")} className="mr-2">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <h2 className="text-lg font-medium">AI Companion Cards</h2>
-            </div>
-            <ScrollArea className="flex-1 p-4">
-              <AICompanionCards />
-            </ScrollArea>
-          </div>
-        )
-      case "flows":
-        return (
-          <div className="flex flex-col h-full">
-            <div className="p-4 border-b flex items-center">
-              <Button variant="ghost" size="icon" onClick={() => setActiveView("chat")} className="mr-2">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <h2 className="text-lg font-medium">AI Companion Flows</h2>
-            </div>
-            <AICompanionFlowSelector />
-          </div>
-        )
-      case "settings":
-        return (
-          <div className="flex flex-col h-full">
-            <div className="p-4 border-b flex items-center">
-              <Button variant="ghost" size="icon" onClick={() => setActiveView("chat")} className="mr-2">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <h2 className="text-lg font-medium">AI Companion Settings</h2>
-            </div>
-            <AICompanionSettings />
-          </div>
-        )
-      default:
-        return null
+        return categoryTopics[category] || []
+      }
     }
+
+    return []
+  }
+
+  const taskHelpTopics = getTaskHelpTopics()
+
+  // Get avatar-specific gradient
+  const getAvatarGradient = () => {
+    const gradients = {
+      fireweed: "bg-gradient-to-r from-pink-400 to-red-500",
+      "labrador-tea": "bg-gradient-to-r from-teal-400 to-green-500",
+      yarrow: "bg-gradient-to-r from-amber-400 to-orange-500",
+      "dwarf-birch": "bg-gradient-to-r from-blue-400 to-indigo-500",
+      "arctic-willow": "bg-gradient-to-r from-purple-400 to-indigo-500",
+    }
+    return gradients[state.avatar] || "bg-gradient-blue-purple"
+  }
+
+  // Get avatar-specific shadow
+  const getAvatarShadow = () => {
+    const shadows = {
+      fireweed: "shadow-pink",
+      "labrador-tea": "shadow-green",
+      yarrow: "shadow-orange",
+      "dwarf-birch": "shadow-blue",
+      "arctic-willow": "shadow-purple",
+    }
+    return shadows[state.avatar] || "shadow-blue"
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 20 }}
-        className={`fixed bottom-4 right-4 ${isExpanded ? "w-[400px] h-[600px]" : "w-[350px] h-[450px]"}`}
-      >
-        <Card className="h-full overflow-hidden shadow-xl border-primary/20 flex flex-col z-50">
-          <CardHeader className="bg-primary/5 py-2 px-4 flex flex-row items-center justify-between space-y-0 border-b">
-            <CardTitle className="text-base font-medium flex items-center gap-2">
-              <Bot className="h-5 w-5 text-primary" />
-              CanAdapt AI Companion
-            </CardTitle>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsExpanded(!isExpanded)}>
-                {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsMinimized(true)}>
-                <X className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={closeCompanion}>
-                <X className="h-4 w-4" />
-              </Button>
+    <Card className="flex flex-col h-full border-none shadow-lg bg-white/90 backdrop-blur-md">
+      <CardHeader className="pb-2 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="flex items-center justify-between">
+          <AvatarSelector />
+          {state.currentUser?.assessmentComplete && (
+            <Badge
+              variant="outline"
+              className="flex items-center gap-1 bg-gradient-to-r from-green-50 to-teal-50 border-green-200 text-green-700"
+            >
+              <DollarSign className="h-3 w-3" />
+              <span>Potential Funding: $1,000</span>
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+        {state.conversationHistory.map((message, index) => (
+          <div key={message.id} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
+            <div
+              className={cn(
+                "max-w-[80%] rounded-lg p-3",
+                message.role === "user"
+                  ? `${getAvatarGradient()} text-white ${getAvatarShadow()}`
+                  : message.role === "system"
+                    ? "bg-muted/50 text-muted-foreground text-xs italic"
+                    : "bg-white border shadow-sm",
+              )}
+            >
+              {message.role === "assistant" && message.metadata?.tone && (
+                <div className="flex justify-end mb-1">{renderToneIndicator(message.metadata.tone)}</div>
+              )}
+              <div className="whitespace-pre-line text-sm">{renderMessageContent(message)}</div>
+              <div className="text-xs opacity-70 mt-1 text-right">{formatTimestamp(message.timestamp)}</div>
             </div>
-          </CardHeader>
-          <CardContent className="p-0 h-[calc(100%-48px)] flex-1 flex flex-col overflow-hidden">
-            {/* AI Companion content here */}
-            {renderView()}
-          </CardContent>
-        </Card>
-      </motion.div>
-    </AnimatePresence>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </CardContent>
+
+      {/* Task-specific help topics */}
+      {taskHelpTopics.length > 0 && (
+        <div className="px-4 mb-2">
+          <div className="text-xs text-muted-foreground mb-2">Task-specific help:</div>
+          <div className="flex flex-wrap gap-2">
+            {taskHelpTopics.map((topic, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                className="text-xs border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                onClick={() => {
+                  sendMessage(topic.question)
+                }}
+              >
+                {topic.icon}
+                {topic.question}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <CardFooter className="border-t p-4 gap-2 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="flex flex-col w-full gap-2">
+          <div className="flex gap-2">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="min-h-[60px] flex-1 resize-none border-blue-200 focus-visible:ring-blue-500"
+              onKeyDown={handleKeyDown}
+              disabled={state.isGenerating}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={state.isGenerating || !input.trim()}
+              className={`self-end ${getAvatarGradient()} hover:opacity-90 ${getAvatarShadow()}`}
+            >
+              {state.isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+          {state.isGenerating && (
+            <div className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+              <Sparkles className="h-3 w-3 text-blue-500 animate-pulse" />
+              <span>Thinking...</span>
+            </div>
+          )}
+        </div>
+      </CardFooter>
+    </Card>
   )
-}
-
-// Export the wrapper component
-export function AICompanion(props: AICompanionProps) {
-  return <AICompanionWithBridge {...props} />
-}
-
-// Helper function to generate mock responses
-function generateMockResponse(input: string, currentFlow: string | null, tone: string): string {
-  // Simple keyword-based responses
-  const inputLower = input.toLowerCase()
-
-  if (currentFlow === "grant_readiness") {
-    if (inputLower.includes("eligibility")) {
-      return "To determine eligibility for most climate adaptation grants, you'll need to check: 1) Organization type (government, non-profit, etc.), 2) Geographic focus, 3) Project alignment with grant priorities, and 4) Capacity to implement and report. Would you like me to help you assess your eligibility for a specific grant?"
-    }
-    if (inputLower.includes("budget")) {
-      return "Creating a strong grant budget involves: 1) Aligning costs with project activities, 2) Including both direct and indirect costs, 3) Providing clear justifications, and 4) Showing any matching funds or in-kind contributions. Would you like guidance on a specific budget item?"
-    }
-  }
-
-  if (currentFlow === "course_recommendation") {
-    if (inputLower.includes("risk assessment")) {
-      return "Based on your interest in climate risk assessment, I recommend starting with 'Climate Risk Assessment Fundamentals' which covers the basics of identifying and evaluating climate-related risks. For more advanced content, 'Advanced Vulnerability Mapping' would be an excellent follow-up course."
-    }
-    if (inputLower.includes("nature") || inputLower.includes("solutions")) {
-      return "For nature-based solutions, I recommend the 'Nature-based Solutions for Climate Adaptation' course. It explores how natural systems can be leveraged to build resilience to climate impacts. The course includes case studies from urban and rural contexts."
-    }
-  }
-
-  if (currentFlow === "reflection") {
-    if (inputLower.includes("challenge") || inputLower.includes("difficult")) {
-      return "Thank you for sharing that challenge. It takes courage to reflect on difficulties. What strengths did you draw on to navigate this situation? Recognizing our inner resources helps build resilience for future challenges."
-    }
-    if (inputLower.includes("learn") || inputLower.includes("discover")) {
-      return "Your commitment to learning is a strength in itself. How might this new knowledge or insight shape your approach to climate adaptation work going forward?"
-    }
-  }
-
-  if (currentFlow === "resilience_boost") {
-    if (inputLower.includes("stuck") || inputLower.includes("frustrated")) {
-      return "It's natural to feel stuck sometimes, especially with complex challenges like climate adaptation. Remember that your persistence in showing up and engaging with these issues is already making a difference. What small step could you take today that would feel manageable and meaningful?"
-    }
-    if (inputLower.includes("overwhelm") || inputLower.includes("too much")) {
-      return "The scale of climate challenges can feel overwhelming. Many successful practitioners have felt this way too. Consider focusing on your sphere of influence - the specific areas where your skills and position allow you to make tangible impacts. What's one area where you feel you can make progress right now?"
-    }
-  }
-
-  // Project-related responses
-  if (inputLower.includes("project") || inputLower.includes("timeline") || inputLower.includes("stakeholder")) {
-    return "I notice you're asking about project management. For detailed project assistance, you might want to try our specialized AI Project Assistant, which has tools for timeline optimization, stakeholder analysis, and risk assessment. Would you like me to connect you with the Project Assistant?"
-  }
-
-  // General responses
-  if (inputLower.includes("hello") || inputLower.includes("hi")) {
-    return "Hello! I'm your CanAdapt AI companion. How can I assist you with your climate adaptation journey today?"
-  }
-
-  if (inputLower.includes("course") || inputLower.includes("learn")) {
-    return "I can help you find courses that match your interests and skill level. What specific climate adaptation topics are you interested in learning more about?"
-  }
-
-  if (inputLower.includes("grant") || inputLower.includes("funding")) {
-    return "I can help you navigate grant opportunities and prepare strong applications. Are you looking for information about specific grants, or would you like guidance on the application process?"
-  }
-
-  if (inputLower.includes("strength") || inputLower.includes("good at")) {
-    return "Recognizing your strengths is important for effective climate adaptation work. From our interactions, I notice you have strong analytical skills and a collaborative approach. Would you like to explore how to leverage these strengths in your current projects?"
-  }
-
-  if (inputLower.includes("value") || inputLower.includes("important to me")) {
-    return "Your values provide a foundation for meaningful climate adaptation work. Would you like to reflect on how your current activities align with what matters most to you? This alignment often leads to more sustainable engagement and impact."
-  }
-
-  // Default response
-  return "That's an interesting point. Could you tell me more about what you're looking to accomplish? I'm here to help with course recommendations, grant applications, project planning, or exploring climate adaptation topics."
 }
