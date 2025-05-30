@@ -12,15 +12,16 @@ import { AICompanionProvider } from "@/components/ai-companion/ai-companion-cont
 import { AICompanion } from "@/components/ai-companion/ai-companion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useTasks } from "@/contexts/tasks-context"
+import { useAuth } from "@/contexts/auth-context"
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Learning", href: "/dashboard/learning", icon: BookOpen },
-  { name: "Finances", href: "/dashboard/finances", icon: DollarSign },
-  { name: "Marketplace", href: "/dashboard/marketplace", icon: ShoppingBag },
-  { name: "Community", href: "/dashboard/community", icon: Users },
-  { name: "Initiatives", href: "/dashboard/initiatives", icon: Award },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Dashboard", href: "/dashboard", icon: Home, section: "dashboard" },
+  { name: "Learning", href: "/dashboard/learning", icon: BookOpen, section: "learning" },
+  { name: "Finances", href: "/dashboard/finances", icon: DollarSign, section: "funding" },
+  { name: "Marketplace", href: "/dashboard/marketplace", icon: ShoppingBag, section: "marketplace" },
+  { name: "Community", href: "/dashboard/community", icon: Users, section: "community" },
+  { name: "Initiatives", href: "/dashboard/initiatives", icon: Award, section: "projects" },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings, section: "settings" },
 ]
 
 interface DashboardLayoutProps {
@@ -32,6 +33,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isMobile, setIsMobile] = useState(false)
   const pathname = usePathname()
   const { tasks } = useTasks()
+  const { user, hasPermission } = useAuth()
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -47,6 +49,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const completedTasks = tasks.filter((task) => task.completed).length
   const totalTasks = tasks.length
   const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
+
+  // Filter navigation items based on user permissions
+  const visibleNavigation = navigation.filter((item) => hasPermission(item.section))
 
   return (
     <AICompanionProvider>
@@ -72,7 +77,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <h1 className="text-xl font-bold text-sew-midnight-blue">Small Economy Works</h1>
                   </div>
                   <nav className="mt-5 px-2 space-y-1">
-                    {navigation.map((item) => {
+                    {visibleNavigation.map((item) => {
                       const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                       return (
                         <Link
@@ -105,7 +110,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <h1 className="text-xl font-bold text-sew-midnight-blue">Small Economy Works</h1>
                   </div>
                   <nav className="mt-5 flex-1 px-2 bg-white space-y-1">
-                    {navigation.map((item) => {
+                    {visibleNavigation.map((item) => {
                       const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                       return (
                         <Tooltip key={item.name}>
@@ -130,8 +135,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     })}
                   </nav>
                 </div>
+
+                {/* User info and progress */}
                 <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
                   <div className="w-full">
+                    <div className="flex items-center mb-2">
+                      <div className="h-8 w-8 rounded-full bg-sew-midnight-blue/10 flex items-center justify-center mr-2">
+                        <span className="text-sm font-medium text-sew-midnight-blue">
+                          {user?.name.charAt(0) || "U"}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{user?.name}</p>
+                        <p className="text-xs text-gray-500 capitalize">{user?.role.replace("-", " ")}</p>
+                      </div>
+                    </div>
                     <div className="text-xs font-medium text-gray-500 mb-2">Learning Progress</div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div

@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Search, Star, Clock, ShoppingBag } from "lucide-react"
+import { ArrowRight, Search, Clock, ShoppingBag } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,13 +20,11 @@ const serviceProviders = [
   {
     id: "1",
     name: "Maya Thompson",
-    age: 17,
+    pronouns: "she/her",
     location: "Whitehorse, YT",
     image: "/young-asian-woman-portrait.png",
     services: ["Graphic Design", "Social Media", "Photography"],
     bio: "Creative designer passionate about helping community projects shine",
-    rating: 4.9,
-    reviews: 23,
     hourlyRate: 25,
     availability: "Available this week",
     portfolio: ["/community-garden.png", "/youth-workshop.png", "/abstract-ec.png"],
@@ -36,13 +34,11 @@ const serviceProviders = [
   {
     id: "2",
     name: "Jordan Blackfeather",
-    age: 19,
+    pronouns: "they/them",
     location: "Yellowknife, NT",
     image: "/placeholder-pqb8p.png",
     services: ["Web Development", "App Design", "Tech Support"],
     bio: "Full-stack developer helping bring digital ideas to life",
-    rating: 4.8,
-    reviews: 31,
     hourlyRate: 30,
     availability: "Available next week",
     portfolio: ["/placeholder-416kf.png", "/placeholder-yze5z.png"],
@@ -52,13 +48,11 @@ const serviceProviders = [
   {
     id: "3",
     name: "Alex Chen",
-    age: 16,
+    pronouns: "he/him",
     location: "Iqaluit, NU",
     image: "/asian-professional-glasses.png",
     services: ["Video Editing", "Content Creation", "Storytelling"],
     bio: "Storyteller helping communities share their impact through video",
-    rating: 5.0,
-    reviews: 18,
     hourlyRate: 20,
     availability: "Available today",
     portfolio: ["/mountain-terrain.png", "/red-barn-landscape.png"],
@@ -68,13 +62,11 @@ const serviceProviders = [
   {
     id: "4",
     name: "Sam Redwing",
-    age: 18,
+    pronouns: "she/her",
     location: "Inuvik, NT",
     image: "/placeholder-55u3s.png",
     services: ["Event Planning", "Community Outreach", "Workshop Facilitation"],
     bio: "Community organizer passionate about bringing people together",
-    rating: 4.7,
-    reviews: 26,
     hourlyRate: 22,
     availability: "Available this week",
     portfolio: ["/stylized-letters-sj.png", "/abstract-dw.png"],
@@ -149,7 +141,8 @@ export default function MarketplacePage() {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="most-active">Most Active</SelectItem>
+                <SelectItem value="recently-joined">Recently Joined</SelectItem>
                 <SelectItem value="price-low">Price: Low to High</SelectItem>
                 <SelectItem value="price-high">Price: High to Low</SelectItem>
                 <SelectItem value="newest">Newest</SelectItem>
@@ -184,7 +177,7 @@ export default function MarketplacePage() {
                     <div>
                       <CardTitle className="text-sew-midnight-blue">{provider.name}</CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        Age {provider.age} • {provider.location}
+                        {provider.pronouns} • {provider.location}
                       </p>
                     </div>
 
@@ -202,14 +195,8 @@ export default function MarketplacePage() {
 
                     <p className="text-sm">{provider.bio}</p>
 
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-sew-sunset-orange">
-                        <Star className="h-4 w-4 fill-current mr-1" />
-                        <span>
-                          {provider.rating} ({provider.reviews} reviews)
-                        </span>
-                      </div>
-                      <div className="text-muted-foreground">{provider.completedProjects} projects</div>
+                    <div className="text-sm text-muted-foreground text-center">
+                      {provider.completedProjects} projects completed
                     </div>
 
                     <div className="flex items-center text-sm text-muted-foreground">
@@ -223,8 +210,9 @@ export default function MarketplacePage() {
                     variant="outline"
                     size="sm"
                     className="border-sew-moss-green text-sew-moss-green hover:bg-sew-moss-green/10"
+                    asChild
                   >
-                    Message
+                    <Link href={`/dashboard/marketplace/${provider.id}?action=request`}>Request Service</Link>
                   </Button>
                   <Button size="sm" className="bg-sew-midnight-blue hover:bg-sew-midnight-blue/90" asChild>
                     <Link href={`/dashboard/marketplace/${provider.id}`}>

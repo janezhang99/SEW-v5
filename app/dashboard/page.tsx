@@ -10,13 +10,13 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, Calendar, DollarSign, FileText, Users, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { ExpensesProvider, useExpenses } from "@/contexts/expenses-context"
+import { useExpenses } from "@/contexts/expenses-context"
 import { useTasks } from "@/contexts/tasks-context"
 import { IntegrationService } from "@/lib/integration-service"
 import { formatCurrency } from "@/lib/format-currency"
 import { format, isAfter, isBefore, addDays } from "date-fns"
 
-function DashboardContent() {
+export default function DashboardPage() {
   const { expenses } = useExpenses()
   const { tasks } = useTasks()
   const [deadlines, setDeadlines] = useState<any[]>([])
@@ -38,7 +38,7 @@ function DashboardContent() {
 
   if (isLoading) {
     return (
-      <>
+      <DashboardShell>
         <DashboardHeader heading="Dashboard" text="Welcome to Small Economy Works" />
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -61,12 +61,12 @@ function DashboardContent() {
             </Card>
           ))}
         </div>
-      </>
+      </DashboardShell>
     )
   }
 
   return (
-    <>
+    <DashboardShell>
       <DashboardHeader heading="Dashboard" text="Welcome to Small Economy Works" />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -131,8 +131,8 @@ function DashboardContent() {
               <div className="rounded-full bg-sew-midnight-blue/10 p-3">
                 <DollarSign className="h-8 w-8 text-sew-midnight-blue" />
               </div>
-              <p className="mt-2 text-2xl font-bold">{formatCurrency(10000)}</p>
-              <p className="text-xs text-muted-foreground">Total funding received</p>
+              <p className="mt-2 text-2xl font-bold">{formatCurrency(1750)}</p>
+              <p className="text-xs text-muted-foreground">Total funding unlocked</p>
               <div className="mt-4 w-full space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span>Budget utilized</span>
@@ -144,9 +144,9 @@ function DashboardContent() {
           </CardContent>
           <CardFooter>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard/funding">
+              <Link href="/dashboard/finances">
                 <DollarSign className="mr-2 h-4 w-4" />
-                View Funding
+                View Finances
               </Link>
             </Button>
           </CardFooter>
@@ -232,9 +232,9 @@ function DashboardContent() {
           </CardContent>
           <CardFooter>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard/projects">
+              <Link href="/dashboard/initiatives">
                 <Calendar className="mr-2 h-4 w-4" />
-                View Deadlines
+                View Projects
               </Link>
             </Button>
           </CardFooter>
@@ -251,37 +251,27 @@ function DashboardContent() {
               <div className="rounded-full bg-sew-moss-green/10 p-3">
                 <FileText className="h-8 w-8 text-sew-moss-green" />
               </div>
-              <p className="mt-2 text-2xl font-bold">{formatCurrency(2450)}</p>
+              <p className="mt-2 text-2xl font-bold">{formatCurrency(787.5)}</p>
               <p className="text-xs text-muted-foreground">This month's expenses</p>
               <div className="mt-4 w-full space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span>Budget remaining</span>
-                  <span>72%</span>
+                  <span>55%</span>
                 </div>
-                <Progress value={72} className="h-1" />
+                <Progress value={55} className="h-1" />
               </div>
             </div>
           </CardContent>
           <CardFooter>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard/expenses">
+              <Link href="/dashboard/finances">
                 <FileText className="mr-2 h-4 w-4" />
-                View Expenses
+                View Finances
               </Link>
             </Button>
           </CardFooter>
         </Card>
       </div>
-    </>
-  )
-}
-
-export default function DashboardPage() {
-  return (
-    <DashboardShell>
-      <ExpensesProvider>
-        <DashboardContent />
-      </ExpensesProvider>
     </DashboardShell>
   )
 }
