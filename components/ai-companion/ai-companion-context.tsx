@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { useExpenses } from "@/contexts/expenses-context"
 import { useTasks } from "@/contexts/tasks-context"
@@ -314,86 +314,80 @@ export const AICompanionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }))
   }
 
-  const generateResponse = useCallback(
-    async (prompt: string, options?: { tone?: TonePreference }) => {
-      try {
-        // Create system prompt based on user profile, avatar, and preferences
-        const systemPrompt = createSystemPrompt(state.currentUser, state.avatar, options?.tone)
+  const generateResponse = async (prompt: string, options?: { tone?: TonePreference }) => {
+    try {
+      // Create system prompt based on user profile, avatar, and preferences
+      const systemPrompt = createSystemPrompt(state.currentUser, state.avatar, options?.tone)
 
-        // Get conversation history in the format expected by the AI
-        const conversationContext = state.conversationHistory
-          .filter((msg) => msg.role !== "system")
-          .slice(-10) // Last 10 messages for context
-          .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
-          .join("\n")
+      // Get conversation history in the format expected by the AI
+      const conversationContext = state.conversationHistory
+        .filter((msg) => msg.role !== "system")
+        .slice(-10) // Last 10 messages for context
+        .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
+        .join("\n")
 
-        const { text } = await generateText({
-          model: openai("gpt-4o"),
-          system: systemPrompt,
-          prompt: `${conversationContext}\n\nUser: ${prompt}\n\nAssistant:`,
-        })
+      const { text } = await generateText({
+        model: openai("gpt-4o"),
+        system: systemPrompt,
+        prompt: `${conversationContext}\n\nUser: ${prompt}\n\nAssistant:`,
+      })
 
-        return text
-      } catch (error) {
-        console.error("Error generating AI response:", error)
-        throw error
-      }
-    },
-    [state.currentUser, state.avatar, state.conversationHistory],
-  )
+      return text
+    } catch (error) {
+      console.error("Error generating AI response:", error)
+      throw error
+    }
+  }
 
   // Simulate AI response
-  const sendMessage = useCallback(
-    async (message: string) => {
-      setIsLoading(true)
+  const sendMessage = async (message: string) => {
+    setIsLoading(true)
 
-      // Add user message
-      setMessages((prev) => [...prev, { role: "user", content: message }])
+    // Add user message
+    setMessages((prev) => [...prev, { role: "user", content: message }])
 
-      // Simulate AI thinking
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+    // Simulate AI thinking
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // Generate contextual response based on message and current section
-      let response = ""
-      const pathParts = pathname.split("/").filter(Boolean)
-      const section = pathParts[1] || "dashboard"
+    // Generate contextual response based on message and current section
+    let response = ""
+    const pathParts = pathname.split("/").filter(Boolean)
+    const section = pathParts[1] || "dashboard"
 
-      // Simple pattern matching for demo purposes
-      if (message.toLowerCase().includes("project")) {
-        response =
-          "I can help you organize your initiatives and track progress. What specific aspect would you like help with?"
-      } else if (message.toLowerCase().includes("expense") || message.toLowerCase().includes("budget")) {
-        response =
-          "Managing expenses is crucial for the success of your initiatives. Small Economy Works provides tools to track expenses, categorize them, and generate reports. Would you like tips on budget management or help with a specific expense-related task?"
-      } else if (message.toLowerCase().includes("learn")) {
-        response =
-          "Continuous learning is a key value at Small Economy Works. Our learning modules cover financial literacy, community engagement, and more. What skills are you interested in developing?"
-      } else if (message.toLowerCase().includes("mentor")) {
-        response =
-          "Mentorship can accelerate your growth and help you navigate challenges. Small Economy Works connects you with experienced mentors who can provide guidance specific to your needs. Would you like help finding a mentor or preparing for a mentorship session?"
-      } else if (message.toLowerCase().includes("community")) {
-        response =
-          "Community is at the heart of Small Economy Works. Building strong relationships and networks can amplify your impact. How are you currently engaging with your community, and how can I help you strengthen those connections?"
-      } else {
-        response =
-          "I'm here to help you navigate Small Economy Works and make the most of the platform. I can assist with expense tracking, learning resources, funding opportunities, mentorship, and community engagement. What would you like to focus on today?"
-      }
+    // Simple pattern matching for demo purposes
+    if (message.toLowerCase().includes("project")) {
+      response =
+        "Projects are the core of your work at Small Economy Works. They help you organize your initiatives, track progress, and collaborate with others. What specific aspect of project management would you like help with?"
+    } else if (message.toLowerCase().includes("expense") || message.toLowerCase().includes("budget")) {
+      response =
+        "Managing expenses is crucial for the success of your initiatives. Small Economy Works provides tools to track expenses, categorize them, and generate reports. Would you like tips on budget management or help with a specific expense-related task?"
+    } else if (message.toLowerCase().includes("learn")) {
+      response =
+        "Continuous learning is a key value at Small Economy Works. Our learning modules cover project management, financial literacy, community engagement, and more. What skills are you interested in developing?"
+    } else if (message.toLowerCase().includes("mentor")) {
+      response =
+        "Mentorship can accelerate your growth and help you navigate challenges. Small Economy Works connects you with experienced mentors who can provide guidance specific to your needs. Would you like help finding a mentor or preparing for a mentorship session?"
+    } else if (message.toLowerCase().includes("community")) {
+      response =
+        "Community is at the heart of Small Economy Works. Building strong relationships and networks can amplify your impact. How are you currently engaging with your community, and how can I help you strengthen those connections?"
+    } else {
+      response =
+        "I'm here to help you navigate Small Economy Works and make the most of the platform. I can assist with project management, expense tracking, learning resources, funding opportunities, mentorship, and community engagement. What would you like to focus on today?"
+    }
 
-      // Add AI response
-      setMessages((prev) => [...prev, { role: "assistant", content: response }])
-      setIsLoading(false)
+    // Add AI response
+    setMessages((prev) => [...prev, { role: "assistant", content: response }])
+    setIsLoading(false)
 
-      // Generate new contextual suggestions based on the conversation
-      const newSuggestions = [
-        "Tell me more about that",
-        "How can I get started?",
-        "What resources are available?",
-        "Show me an example",
-      ]
-      setContextualSuggestions(newSuggestions)
-    },
-    [pathname],
-  )
+    // Generate new contextual suggestions based on the conversation
+    const newSuggestions = [
+      "Tell me more about that",
+      "How can I get started?",
+      "What resources are available?",
+      "Show me an example",
+    ]
+    setContextualSuggestions(newSuggestions)
+  }
 
   const handleGuidedInteraction = async (
     userInput: string,

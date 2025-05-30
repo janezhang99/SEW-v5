@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { DashboardLayout } from "@/components/layouts/dashboard-layout"
+import { EventsProvider } from "@/contexts/events-context"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,5 +35,9 @@ export const metadata: Metadata = {
 // export default DashboardLayout
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <DashboardLayout>{children}</DashboardLayout>
+  return (
+    <EventsProvider>
+      <DashboardLayout>{children}</DashboardLayout>
+    </EventsProvider>
+  )
 }

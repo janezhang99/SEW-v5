@@ -9,7 +9,17 @@ import { ExpenseList } from "@/components/expenses/expense-list"
 import { ExpenseCharts } from "@/components/expenses/expense-charts"
 import { ExpenseReport } from "@/components/expenses/expense-report"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, FileText, Download, ArrowRight, CheckCircle, Clock, DollarSign } from "lucide-react"
+import {
+  PlusCircle,
+  FileText,
+  Download,
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -80,13 +90,16 @@ export default function ExpensesPage() {
   ]
 
   // Find next milestone
-  const nextMilestone = milestones.find((milestone) => !milestone.unlocked)?.amount || totalPotentialFunding
+  const nextMilestone = milestones.find((milestone) => !milestone.unlocked)
+  const nextMilestoneAmount = nextMilestone?.amount || totalPotentialFunding
+  const tasksRemainingForNextMilestone = nextMilestone ? nextMilestone.tasksRequired - completedTasks.length : 0
 
   // Calculate expense totals
   const totalExpenses = getTotalExpenses()
   const approvedExpenses = getApprovedExpenses()
   const pendingExpenses = getPlannedExpenses()
   const remainingBudget = unlockedFunding - totalExpenses > 0 ? unlockedFunding - totalExpenses : 0
+  const budgetUsedPercentage = Math.round((totalExpenses / unlockedFunding) * 100) || 0
 
   const handleAddExpense = (expense) => {
     addExpense({
@@ -99,7 +112,7 @@ export default function ExpensesPage() {
   if (expensesLoading || tasksLoading) {
     return (
       <DashboardShell>
-        <DashboardHeader heading="Funding & Expenses" text="Loading your financial data...">
+        <DashboardHeader heading="Finances" text="Loading your financial data...">
           <Button variant="outline" className="gap-2" disabled>
             <Download className="h-4 w-4" />
             Export Financial Report
@@ -118,7 +131,7 @@ export default function ExpensesPage() {
   if (expensesError || tasksError) {
     return (
       <DashboardShell>
-        <DashboardHeader heading="Funding & Expenses" text="There was an error loading your financial data">
+        <DashboardHeader heading="Finances" text="There was an error loading your financial data">
           <Button variant="outline" className="gap-2" onClick={() => window.location.reload()}>
             Retry
           </Button>
@@ -135,7 +148,7 @@ export default function ExpensesPage() {
 
   return (
     <DashboardShell>
-      <DashboardHeader heading="Funding & Expenses" text="Track your funding progress and manage project expenses">
+      <DashboardHeader heading="Finances" text="Manage your funding progress and project expenses">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -156,14 +169,48 @@ export default function ExpensesPage() {
         </div>
       </DashboardHeader>
 
+      {/* Quick Actions Section */}
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-200">
+          <CardBody className="flex flex-col items-center justify-center space-y-3 py-6">
+            <Button variant="secondary" size="sm" onClick={() => setIsAddingExpense(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Expense
+            </Button>
+          </CardBody>
+        </Card>
+
+        <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-200">
+          <CardBody className="flex flex-col items-center justify-center space-y-3 py-6">
+            <Button variant="secondary" size="sm" asChild>
+              <Link href="/dashboard/learning">
+                <CheckCircle className="mr-2 h-4 w-4" />
+                View Tasks
+              </Link>
+            </Button>
+          </CardBody>
+        </Card>
+
+        <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-200">
+          <CardBody className="flex flex-col items-center justify-center space-y-3 py-6">
+            <Button variant="secondary" size="sm" asChild>
+              <Link href="/dashboard/finances/request">
+                <FileText className="mr-2 h-4 w-4" />
+                Request Funds
+              </Link>
+            </Button>
+          </CardBody>
+        </Card>
+      </div>
+
       {/* Funding Overview Section */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
-        <Card>
+        <Card className="bg-white shadow-md rounded-lg overflow-hidden">
           <CardHeader className="pb-2">
-            <CardTitle>Total Funds Banked</CardTitle>
-            <CardDescription>Track your unlocked micro-grant funding</CardDescription>
+            <CardTitle className="text-lg font-semibold">Funding Progress</CardTitle>
+            <CardDescription className="text-sm text-gray-500">Track your unlocked micro-grant funding</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -187,16 +234,22 @@ export default function ExpensesPage() {
                 <h4 className="text-sm font-medium mb-1">Next Milestone</h4>
                 <p className="text-xs text-muted-foreground mb-2">{nextMilestoneDescription}</p>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">${nextMilestone}</span>
+                  <span className="font-medium">${nextMilestoneAmount}</span>
                   <Badge variant="outline" className="text-xs">
                     <Clock className="mr-1 h-3 w-3" />
-                    In progress
+                    {tasksRemainingForNextMilestone} tasks needed
                   </Badge>
                 </div>
+                <Button variant="secondary" size="sm" className="w-full mt-2" asChild>
+                  <Link href="/dashboard/learning">
+                    Complete Tasks
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
               </div>
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="p-6">
             <Button variant="outline" className="w-full" asChild>
               <Link href="/dashboard/learning">
                 Complete More Tasks
@@ -272,26 +325,34 @@ export default function ExpensesPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {milestones.map((milestone, index) => (
-                <div key={index} className="flex items-center gap-4 rounded-md border p-3">
-                  <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                      milestone.unlocked ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {milestone.unlocked ? <CheckCircle className="h-4 w-4" /> : index + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">${milestone.amount}</h4>
-                      <Badge variant={milestone.unlocked ? "default" : "outline"} className="text-xs">
-                        {milestone.unlocked ? "Unlocked" : `${milestone.tasksRequired} tasks needed`}
-                      </Badge>
+              <div className="relative">
+                {/* Progress Line */}
+                <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-muted" style={{ marginLeft: "15px" }}></div>
+
+                {milestones.map((milestone, index) => (
+                  <div key={index} className="flex items-start gap-4 rounded-md p-3">
+                    {/* Milestone Icon */}
+                    <div
+                      className={`h-8 w-8 rounded-full flex items-center justify-center z-10 ${
+                        milestone.unlocked ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {milestone.unlocked ? <CheckCircle className="h-4 w-4" /> : index + 1}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{milestone.description}</p>
+
+                    {/* Milestone Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">${milestone.amount}</h4>
+                        <Badge variant={milestone.unlocked ? "default" : "outline"} className="text-xs">
+                          {milestone.unlocked ? "Unlocked" : `${milestone.tasksRequired} tasks needed`}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{milestone.description}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -327,9 +388,15 @@ export default function ExpensesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-sew-midnight-blue">${approvedExpenses.toFixed(2)}</div>
-            <p className="text-xs text-sew-midnight-blue/80">
-              {expenses.filter((e) => e.status === "approved" || e.status === "paid").length} approved expenses
-            </p>
+            <div className="flex items-center text-xs text-sew-midnight-blue/80">
+              {budgetUsedPercentage > 50 ? (
+                <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
+              ) : (
+                <TrendingDown className="h-4 w-4 mr-1 text-red-500" />
+              )}
+              {expenses.filter((e) => e.status === "approved" || e.status === "paid").length} approved expenses (
+              {budgetUsedPercentage}%)
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -338,8 +405,8 @@ export default function ExpensesPage() {
       <Tabs defaultValue="expenses" className="mt-6">
         <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="funding-details">Funding Details</TabsTrigger>
+          <TabsTrigger value="reports">Analytics & Reports</TabsTrigger>
+          <TabsTrigger value="funding-details">How Funding Works</TabsTrigger>
         </TabsList>
 
         <TabsContent value="expenses" className="space-y-4">
@@ -399,7 +466,7 @@ export default function ExpensesPage() {
                   expenses.
                 </p>
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href="/dashboard/expenses/request">
+                  <Link href="/dashboard/finances/request">
                     <FileText className="mr-2 h-4 w-4" />
                     Request Fund Disbursement
                   </Link>
@@ -411,4 +478,8 @@ export default function ExpensesPage() {
       </Tabs>
     </DashboardShell>
   )
+}
+
+const CardBody = ({ className, ...props }) => {
+  return <div className={`p-4 ${className}`} {...props} />
 }

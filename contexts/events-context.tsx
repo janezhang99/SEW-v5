@@ -2,414 +2,382 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
-import { v4 as uuidv4 } from "uuid"
-import { useToast } from "@/components/ui/use-toast"
 
-// Event types
-export type EventCategory =
-  | "workshop"
-  | "webinar"
-  | "networking"
-  | "community"
-  | "funding"
-  | "cultural"
-  | "training"
-  | "celebration"
-  | "other"
-
-export type EventFormat = "in-person" | "virtual" | "hybrid"
-
-export type EventVisibility = "public" | "community" | "private"
-
-export type EventStatus = "upcoming" | "ongoing" | "past" | "canceled"
-
-export interface EventOrganizer {
-  id: string
-  name: string
-  role?: string
-  organization?: string
-}
+export type EventType = "workshop" | "meetup" | "presentation" | "showcase" | "fundraiser" | "community"
 
 export interface EventAttendee {
   id: string
   name: string
-  rsvpStatus: "going" | "maybe" | "not-going"
-  rsvpDate: string
+  avatar?: string
+  role?: string
 }
 
-export interface EventResource {
+export interface EventFeedback {
   id: string
-  title: string
-  type: "link" | "document" | "image" | "video" | "other"
-  url: string
-  description?: string
+  userId: string
+  userName: string
+  userAvatar?: string
+  comment: string
+  rating?: number
+  createdAt: Date
 }
 
-export interface EventLocation {
-  name: string
-  address?: string
-  city?: string
-  region?: string
-  country?: string
-  postalCode?: string
-  virtualLink?: string
-  joinInfo?: string
+export interface EventFunding {
+  totalFunded: number
+  fundingGoal?: number
+  fundingSource: string
+  fundingCategory: string
+}
+
+export interface EventImpact {
+  communityBenefit: string
+  peopleReached: number
+  outcomes: string[]
+  testimonials?: EventFeedback[]
 }
 
 export interface Event {
   id: string
   title: string
   description: string
-  category: EventCategory
-  format: EventFormat
-  visibility: EventVisibility
-  startDate: string
-  endDate: string
-  location: EventLocation
+  type: EventType
+  date: Date
+  location: string
   image?: string
-  maxAttendees?: number
-  tags: string[]
-  isFeatured: boolean
-  status: EventStatus
-  organizers: EventOrganizer[]
+  organizer: {
+    id: string
+    name: string
+    avatar?: string
+  }
   attendees: EventAttendee[]
-  resources: EventResource[]
-  createdAt: string
-  updatedAt: string
+  isVirtual: boolean
+  virtualLink?: string
+  tags: string[]
+  isInitiative: boolean
+  funding?: EventFunding
+  impact?: EventImpact
+  progress?: number
+  milestones?: {
+    title: string
+    completed: boolean
+    date?: Date
+  }[]
+  gallery?: string[]
 }
 
-// Context type
-type EventsContextType = {
+interface EventsContextType {
   events: Event[]
-  featuredEvents: Event[]
-  upcomingEvents: Event[]
-  pastEvents: Event[]
-  userEvents: Event[]
-  isLoading: boolean
-  error: string | null
-  addEvent: (event: Omit<Event, "id" | "status" | "createdAt" | "updatedAt">) => void
+  addEvent: (event: Omit<Event, "id">) => void
   updateEvent: (id: string, event: Partial<Event>) => void
   deleteEvent: (id: string) => void
-  getEventById: (id: string) => Event | undefined
-  rsvpToEvent: (eventId: string, attendee: Omit<EventAttendee, "rsvpDate">) => void
-  filterEventsByCategory: (category: EventCategory) => Event[]
-  filterEventsByDate: (startDate: Date, endDate?: Date) => Event[]
-  searchEvents: (query: string) => Event[]
-  addEventResource: (eventId: string, resource: Omit<EventResource, "id">) => void
-  removeEventResource: (eventId: string, resourceId: string) => void
+  getEvent: (id: string) => Event | undefined
+  addAttendee: (eventId: string, attendee: Omit<EventAttendee, "id">) => void
+  removeAttendee: (eventId: string, attendeeId: string) => void
+  addFeedback: (eventId: string, feedback: Omit<EventFeedback, "id" | "createdAt">) => void
+  getUpcomingEvents: () => Event[]
+  getInitiatives: () => Event[]
+  loading: boolean
 }
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined)
 
-// Sample events data
-const sampleEvents: Event[] = [
-  {
-    id: "1",
-    title: "Community Garden Workshop",
-    description: "Learn how to start and maintain a community garden in your neighborhood.",
-    category: "workshop",
-    format: "in-person",
-    visibility: "public",
-    startDate: new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
-    endDate: new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(), // 2 hours later
-    location: {
-      name: "Community Center",
-      address: "123 Main Street",
-      city: "Whitehorse",
-      region: "Yukon",
-      country: "Canada",
-      postalCode: "Y1A 1A1",
-    },
-    image: "/community-garden.png",
-    tags: ["gardening", "community", "sustainability"],
-    isFeatured: true,
-    status: "upcoming",
-    organizers: [
-      {
-        id: "org1",
-        name: "Sarah Johnson",
-        role: "Community Coordinator",
-        organization: "Small Economy Works",
-      },
-    ],
-    attendees: [],
-    resources: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "Grant Writing Webinar",
-    description: "Learn effective strategies for writing successful grant applications.",
-    category: "webinar",
-    format: "virtual",
-    visibility: "community",
-    startDate: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-    endDate: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000 + 1.5 * 60 * 60 * 1000).toISOString(), // 1.5 hours later
-    location: {
-      name: "Zoom Webinar",
-      virtualLink: "https://zoom.us/j/123456789",
-      joinInfo: "Meeting ID: 123 456 789, Passcode: grant2023",
-    },
-    tags: ["funding", "grants", "writing"],
-    isFeatured: false,
-    status: "upcoming",
-    organizers: [
-      {
-        id: "org2",
-        name: "Michael Chen",
-        role: "Funding Specialist",
-        organization: "Small Economy Works",
-      },
-    ],
-    attendees: [],
-    resources: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    title: "Cultural Celebration Day",
-    description: "Join us for a day of celebrating diverse cultural traditions in our community.",
-    category: "cultural",
-    format: "in-person",
-    visibility: "public",
-    startDate: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days from now
-    endDate: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000).toISOString(), // 8 hours later
-    location: {
-      name: "Community Park",
-      address: "456 Park Avenue",
-      city: "Whitehorse",
-      region: "Yukon",
-      country: "Canada",
-      postalCode: "Y1A 2B2",
-    },
-    image: "/placeholder-yduhz.png",
-    maxAttendees: 200,
-    tags: ["culture", "celebration", "community", "diversity"],
-    isFeatured: true,
-    status: "upcoming",
-    organizers: [
-      {
-        id: "org3",
-        name: "Anika Patel",
-        role: "Event Coordinator",
-        organization: "Small Economy Works",
-      },
-      {
-        id: "org4",
-        name: "David Wilson",
-        role: "Community Liaison",
-        organization: "Cultural Association",
-      },
-    ],
-    attendees: [],
-    resources: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-]
-
-// Provider component
-export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [events, setEvents] = useState<Event[]>(sampleEvents)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const { toast } = useToast()
-
-  // Derived state
-  const featuredEvents = events.filter((event) => event.isFeatured)
-  const upcomingEvents = events.filter((event) => event.status === "upcoming")
-  const pastEvents = events.filter((event) => event.status === "past")
-
-  // Update event statuses based on dates
-  useEffect(() => {
-    const now = new Date().toISOString()
-
-    const updatedEvents = events.map((event) => {
-      if (event.status === "canceled") {
-        return event
-      }
-
-      if (event.startDate > now && event.endDate > now) {
-        return { ...event, status: "upcoming" }
-      } else if (event.startDate <= now && event.endDate > now) {
-        return { ...event, status: "ongoing" }
-      } else {
-        return { ...event, status: "past" }
-      }
-    })
-
-    if (JSON.stringify(updatedEvents) !== JSON.stringify(events)) {
-      setEvents(updatedEvents)
-    }
-  }, [events])
-
-  // Get event by ID
-  const getEventById = (id: string) => {
-    return events.find((event) => event.id === id)
+export const useEvents = () => {
+  const context = useContext(EventsContext)
+  if (!context) {
+    throw new Error("useEvents must be used within an EventsProvider")
   }
+  return context
+}
 
-  // Add new event
-  const addEvent = (event: Omit<Event, "id" | "status" | "createdAt" | "updatedAt">) => {
-    const now = new Date().toISOString()
-    const status = event.startDate > now ? "upcoming" : event.endDate > now ? "ongoing" : "past"
+export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [events, setEvents] = useState<Event[]>([])
+  const [loading, setLoading] = useState(true)
 
-    const newEvent: Event = {
-      ...event,
-      id: uuidv4(),
-      status,
-      createdAt: now,
-      updatedAt: now,
+  useEffect(() => {
+    // Simulate fetching events from an API
+    const fetchEvents = async () => {
+      try {
+        // In a real app, this would be an API call
+        const mockEvents: Event[] = [
+          {
+            id: "1",
+            title: "Community Garden Initiative",
+            description:
+              "A youth-led project to create a sustainable community garden that provides fresh produce for local food banks.",
+            type: "showcase",
+            date: new Date(2025, 5, 15, 14, 0),
+            location: "Community Center",
+            image: "/community-garden.png",
+            organizer: {
+              id: "user1",
+              name: "Jordan Smith",
+              avatar: "/placeholder-ukgjx.png",
+            },
+            attendees: [
+              { id: "att1", name: "Alex Johnson" },
+              { id: "att2", name: "Taylor Williams" },
+            ],
+            isVirtual: false,
+            tags: ["sustainability", "agriculture", "community service"],
+            isInitiative: true,
+            funding: {
+              totalFunded: 2500,
+              fundingGoal: 3000,
+              fundingSource: "Small Economy Works Grant",
+              fundingCategory: "Environmental",
+            },
+            impact: {
+              communityBenefit: "Provides fresh produce to local food banks and teaches sustainable farming practices",
+              peopleReached: 150,
+              outcomes: [
+                "Produced 500lbs of vegetables in first season",
+                "Engaged 25 youth volunteers",
+                "Donated to 3 local food banks",
+              ],
+              testimonials: [
+                {
+                  id: "test1",
+                  userId: "user5",
+                  userName: "Community Food Bank",
+                  comment: "The fresh produce has been a wonderful addition to our offerings.",
+                  rating: 5,
+                  createdAt: new Date(2025, 4, 20),
+                },
+              ],
+            },
+            progress: 75,
+            milestones: [
+              { title: "Land secured", completed: true, date: new Date(2025, 2, 10) },
+              { title: "Garden beds built", completed: true, date: new Date(2025, 3, 15) },
+              { title: "First harvest", completed: true, date: new Date(2025, 4, 30) },
+              { title: "Winter preparation", completed: false },
+            ],
+            gallery: ["/placeholder-zmmhy.png", "/placeholder-pqb8p.png", "/placeholder-bfhj3.png"],
+          },
+          {
+            id: "2",
+            title: "Youth Tech Workshop Series",
+            description:
+              "A series of workshops teaching coding and digital skills to underserved youth in our community.",
+            type: "workshop",
+            date: new Date(2025, 6, 5, 10, 0),
+            location: "Digital Learning Center",
+            image: "/youth-workshop.png",
+            organizer: {
+              id: "user2",
+              name: "Sam Rivera",
+              avatar: "/placeholder-o4loo.png",
+            },
+            attendees: [
+              { id: "att3", name: "Casey Lee" },
+              { id: "att4", name: "Morgan Chen" },
+            ],
+            isVirtual: true,
+            virtualLink: "https://meet.example.com/tech-workshop",
+            tags: ["education", "technology", "digital literacy"],
+            isInitiative: true,
+            funding: {
+              totalFunded: 5000,
+              fundingGoal: 5000,
+              fundingSource: "Small Economy Works Grant",
+              fundingCategory: "Education",
+            },
+            impact: {
+              communityBenefit: "Increases digital literacy and career opportunities for underserved youth",
+              peopleReached: 75,
+              outcomes: [
+                "Trained 75 youth in basic coding",
+                "Helped 12 participants secure tech internships",
+                "Created 15 community websites for local businesses",
+              ],
+            },
+            progress: 100,
+            milestones: [
+              { title: "Curriculum development", completed: true, date: new Date(2025, 3, 20) },
+              { title: "Equipment purchased", completed: true, date: new Date(2025, 4, 5) },
+              { title: "First workshop", completed: true, date: new Date(2025, 5, 1) },
+              { title: "Final showcase", completed: true, date: new Date(2025, 6, 1) },
+            ],
+          },
+          {
+            id: "3",
+            title: "Indigenous Art Market",
+            description:
+              "A marketplace for young Indigenous artists to showcase and sell their artwork to the community.",
+            type: "showcase",
+            date: new Date(2025, 7, 12, 11, 0),
+            location: "Cultural Center Plaza",
+            image: "/abstract-ec.png",
+            organizer: {
+              id: "user3",
+              name: "River Johnson",
+              avatar: "/placeholder-vj1kw.png",
+            },
+            attendees: [
+              { id: "att5", name: "Sky Williams" },
+              { id: "att6", name: "Dawn Martinez" },
+            ],
+            isVirtual: false,
+            tags: ["art", "indigenous", "entrepreneurship"],
+            isInitiative: true,
+            funding: {
+              totalFunded: 3500,
+              fundingGoal: 4000,
+              fundingSource: "Small Economy Works Grant",
+              fundingCategory: "Cultural",
+            },
+            impact: {
+              communityBenefit:
+                "Preserves cultural traditions and provides economic opportunities for Indigenous youth",
+              peopleReached: 300,
+              outcomes: [
+                "Showcased work from 25 Indigenous artists",
+                "Generated $7,500 in art sales",
+                "Created ongoing mentorship program with 5 established artists",
+              ],
+            },
+            progress: 85,
+            milestones: [
+              { title: "Artist recruitment", completed: true, date: new Date(2025, 5, 15) },
+              { title: "Venue secured", completed: true, date: new Date(2025, 6, 1) },
+              { title: "Marketing campaign", completed: true, date: new Date(2025, 6, 20) },
+              { title: "Event day", completed: false, date: new Date(2025, 7, 12) },
+            ],
+            gallery: ["/placeholder-q00l8.png", "/placeholder-hzvjo.png", "/placeholder-vy2eb.png"],
+          },
+          {
+            id: "4",
+            title: "Monthly Community Meeting",
+            description: "Regular meeting to discuss community initiatives and updates.",
+            type: "meetup",
+            date: new Date(2025, 5, 28, 18, 0),
+            location: "Community Hall",
+            organizer: {
+              id: "admin1",
+              name: "Admin",
+            },
+            attendees: [],
+            isVirtual: false,
+            tags: ["community", "planning"],
+            isInitiative: false,
+          },
+        ]
+
+        setEvents(mockEvents)
+        setLoading(false)
+      } catch (error) {
+        console.error("Error fetching events:", error)
+        setLoading(false)
+      }
     }
 
+    fetchEvents()
+  }, [])
+
+  const addEvent = (event: Omit<Event, "id">) => {
+    const newEvent = {
+      ...event,
+      id: `event-${Date.now()}`,
+    }
     setEvents((prevEvents) => [...prevEvents, newEvent])
   }
 
-  // Update event
-  const updateEvent = (id: string, updatedFields: Partial<Event>) => {
-    setEvents((prevEvents) =>
-      prevEvents.map((event) =>
-        event.id === id ? { ...event, ...updatedFields, updatedAt: new Date().toISOString() } : event,
-      ),
-    )
+  const updateEvent = (id: string, eventUpdate: Partial<Event>) => {
+    setEvents((prevEvents) => prevEvents.map((event) => (event.id === id ? { ...event, ...eventUpdate } : event)))
   }
 
-  // Delete event
   const deleteEvent = (id: string) => {
     setEvents((prevEvents) => prevEvents.filter((event) => event.id !== id))
   }
 
-  // RSVP to event
-  const rsvpToEvent = (eventId: string, attendee: Omit<EventAttendee, "rsvpDate">) => {
+  const getEvent = (id: string) => {
+    return events.find((event) => event.id === id)
+  }
+
+  const addAttendee = (eventId: string, attendee: Omit<EventAttendee, "id">) => {
+    const newAttendee = {
+      ...attendee,
+      id: `attendee-${Date.now()}`,
+    }
+    setEvents((prevEvents) =>
+      prevEvents.map((event) =>
+        event.id === eventId ? { ...event, attendees: [...event.attendees, newAttendee] } : event,
+      ),
+    )
+  }
+
+  const removeAttendee = (eventId: string, attendeeId: string) => {
+    setEvents((prevEvents) =>
+      prevEvents.map((event) =>
+        event.id === eventId
+          ? {
+              ...event,
+              attendees: event.attendees.filter((a) => a.id !== attendeeId),
+            }
+          : event,
+      ),
+    )
+  }
+
+  const addFeedback = (eventId: string, feedback: Omit<EventFeedback, "id" | "createdAt">) => {
+    const newFeedback = {
+      ...feedback,
+      id: `feedback-${Date.now()}`,
+      createdAt: new Date(),
+    }
+
     setEvents((prevEvents) =>
       prevEvents.map((event) => {
-        if (event.id !== eventId) return event
+        if (event.id === eventId) {
+          const updatedImpact = event.impact
+            ? {
+                ...event.impact,
+                testimonials: [...(event.impact.testimonials || []), newFeedback],
+              }
+            : {
+                communityBenefit: "",
+                peopleReached: 0,
+                outcomes: [],
+                testimonials: [newFeedback],
+              }
 
-        // Check if attendee already exists
-        const existingAttendeeIndex = event.attendees.findIndex((a) => a.id === attendee.id)
-
-        const updatedAttendees = [...event.attendees]
-
-        if (existingAttendeeIndex >= 0) {
-          // Update existing attendee
-          updatedAttendees[existingAttendeeIndex] = {
-            ...updatedAttendees[existingAttendeeIndex],
-            ...attendee,
-            rsvpDate: new Date().toISOString(),
-          }
-        } else {
-          // Add new attendee
-          updatedAttendees.push({
-            ...attendee,
-            rsvpDate: new Date().toISOString(),
-          })
+          return { ...event, impact: updatedImpact }
         }
-
-        return {
-          ...event,
-          attendees: updatedAttendees,
-          updatedAt: new Date().toISOString(),
-        }
+        return event
       }),
     )
   }
 
-  // Add event resource
-  const addEventResource = (eventId: string, resource: Omit<EventResource, "id">) => {
-    setEvents((prevEvents) =>
-      prevEvents.map((event) => {
-        if (event.id !== eventId) return event
-
-        return {
-          ...event,
-          resources: [
-            ...event.resources,
-            {
-              ...resource,
-              id: uuidv4(),
-            },
-          ],
-          updatedAt: new Date().toISOString(),
-        }
-      }),
-    )
+  const getUpcomingEvents = () => {
+    const now = new Date()
+    return events
+      .filter((event) => new Date(event.date) > now)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   }
 
-  // Remove event resource
-  const removeEventResource = (eventId: string, resourceId: string) => {
-    setEvents((prevEvents) =>
-      prevEvents.map((event) => {
-        if (event.id !== eventId) return event
-
-        return {
-          ...event,
-          resources: event.resources.filter((resource) => resource.id !== resourceId),
-          updatedAt: new Date().toISOString(),
-        }
-      }),
-    )
-  }
-
-  const filterEventsByCategory = (category: EventCategory) => {
-    return events.filter((event) => event.category === category)
-  }
-
-  const filterEventsByDate = (startDate: Date, endDate?: Date) => {
-    return events.filter((event) => {
-      const eventStart = new Date(event.startDate)
-      if (endDate) {
-        const eventEnd = new Date(event.endDate)
-        return eventStart >= startDate && eventEnd <= endDate
-      }
-      return eventStart.toDateString() === startDate.toDateString()
-    })
-  }
-
-  const searchEvents = (query: string) => {
-    const lowercaseQuery = query.toLowerCase()
-    return events.filter(
-      (event) =>
-        event.title.toLowerCase().includes(lowercaseQuery) ||
-        event.description.toLowerCase().includes(lowercaseQuery) ||
-        event.tags.some((tag) => tag.toLowerCase().includes(lowercaseQuery)),
-    )
+  const getInitiatives = () => {
+    return events
+      .filter((event) => event.isInitiative)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   }
 
   return (
     <EventsContext.Provider
       value={{
         events,
-        featuredEvents,
-        upcomingEvents,
-        pastEvents,
-        userEvents: [],
-        isLoading: false,
-        error: null,
         addEvent,
         updateEvent,
         deleteEvent,
-        getEventById,
-        rsvpToEvent,
-        filterEventsByCategory,
-        filterEventsByDate,
-        searchEvents,
-        addEventResource,
-        removeEventResource,
+        getEvent,
+        addAttendee,
+        removeAttendee,
+        addFeedback,
+        getUpcomingEvents,
+        getInitiatives,
+        loading,
       }}
     >
       {children}
     </EventsContext.Provider>
   )
-}
-
-// Custom hook to use the events context
-export const useEvents = () => {
-  const context = useContext(EventsContext)
-
-  if (context === undefined) {
-    throw new Error("useEvents must be used within an EventsProvider")
-  }
-
-  return context
 }
