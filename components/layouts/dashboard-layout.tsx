@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { BookOpen, DollarSign, Home, Menu, Settings, Users, Award, ShoppingBag, X } from "lucide-react"
+import { BookOpen, DollarSign, Home, Menu, Settings, Users, Award, ShoppingBag, X, FileText } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { AICompanionProvider } from "@/components/ai-companion/ai-companion-context"
@@ -21,6 +21,7 @@ const navigation = [
   { name: "Marketplace", href: "/dashboard/marketplace", icon: ShoppingBag, section: "marketplace" },
   { name: "Community", href: "/dashboard/community", icon: Users, section: "community" },
   { name: "Initiatives", href: "/dashboard/initiatives", icon: Award, section: "projects" },
+  { name: "Resources", href: "/dashboard/resources", icon: FileText, section: "resources" },
   { name: "Settings", href: "/dashboard/settings", icon: Settings, section: "settings" },
 ]
 

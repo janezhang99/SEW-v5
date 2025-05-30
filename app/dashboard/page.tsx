@@ -51,11 +51,11 @@ export default function DashboardPage() {
 
   // Mock leaderboard data
   const leaderboardData = [
-    { id: 1, name: "Sarah J.", avatar: "SJ", amount: 2500, project: "Community Garden" },
-    { id: 2, name: "Michael T.", avatar: "MT", amount: 2100, project: "Youth Workshop" },
-    { id: 3, name: "Aisha K.", avatar: "AK", amount: 1900, project: "Cultural Festival" },
-    { id: 4, name: "David W.", avatar: "DW", amount: 1750, project: "Tech Mentorship" },
-    { id: 5, name: "Emma C.", avatar: "EC", amount: 1600, project: "Environmental Club" },
+    { id: 1, name: "Sarah J.", avatar: "SJ", percentage: 100, project: "Community Garden" },
+    { id: 2, name: "Michael T.", avatar: "MT", percentage: 84, project: "Youth Workshop" },
+    { id: 3, name: "Aisha K.", avatar: "AK", percentage: 76, project: "Cultural Festival" },
+    { id: 4, name: "David W.", avatar: "DW", percentage: 70, project: "Tech Mentorship" },
+    { id: 5, name: "Emma C.", avatar: "EC", percentage: 64, project: "Environmental Club" },
   ]
 
   useEffect(() => {
@@ -150,19 +150,19 @@ export default function DashboardPage() {
 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">Next milestone</span>
-                    <span className="font-medium">{formatCurrency(500)}</span>
+                    <span className="font-medium">Current learning phase</span>
+                    <span className="font-medium">80%</span>
                   </div>
-                  <Progress value={60} className="h-2 bg-gray-100" indicatorClassName="bg-sew-sky-blue" />
+                  <Progress value={80} className="h-2 bg-gray-100" indicatorClassName="bg-sew-sky-blue" />
                 </div>
               </div>
             </div>
           </CardContent>
           <CardFooter>
             <Button asChild variant="default" className="w-full bg-sew-midnight-blue hover:bg-sew-midnight-blue/90">
-              <Link href="/dashboard/finances">
-                <DollarSign className="mr-2 h-4 w-4" />
-                View Finances
+              <Link href="/dashboard/learning">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Learn to Bank More Funds
               </Link>
             </Button>
           </CardFooter>
@@ -476,9 +476,9 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold">{formatCurrency(leader.amount)}</p>
+                    <p className="text-sm font-semibold">{leader.percentage}%</p>
                     <Progress
-                      value={(leader.amount / 2500) * 100}
+                      value={leader.percentage}
                       className="h-1.5 w-24"
                       indicatorClassName={
                         index === 0

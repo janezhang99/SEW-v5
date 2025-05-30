@@ -1,113 +1,63 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState } from "react"
 
-export type UserRole = "project-lead" | "team-member" | "mentor" | "alumni" | "public-viewer"
-
-export interface User {
-  id: string
-  name: string
-  email: string
-  role: UserRole
-  age: number
-  avatar?: string
-  projectId?: string
-  isActive: boolean
-}
-
-interface AuthContextType {
-  user: User | null
-  login: (email: string, password: string) => Promise<void>
+interface AuthContextProps {
+  user: any | null // Replace 'any' with your user type
+  login: (userData: any) => void // Replace 'any' with your user type
   logout: () => void
-  hasPermission: (section: string, action?: string) => boolean
-  isLoading: boolean
+  hasPermission: (section: string) => boolean
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextProps | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<any | null>(null) // Replace 'any' with your user type
 
-  useEffect(() => {
-    // Simulate loading user from storage/API
-    const mockUser: User = {
-      id: "1",
-      name: "Maya Thompson",
-      email: "maya@example.com",
-      role: "project-lead",
-      age: 17,
-      avatar: "/young-asian-woman-portrait.png",
-      projectId: "project-1",
-      isActive: true,
-    }
-    setUser(mockUser)
-    setIsLoading(false)
-  }, [])
-
-  const login = async (email: string, password: string) => {
-    // Implement login logic
-    setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
+  const login = (userData: any) => {
+    // Replace 'any' with your user type
+    setUser(userData)
+    // Store user data in local storage or cookies for persistence
+    localStorage.setItem("user", JSON.stringify(userData))
   }
 
   const logout = () => {
     setUser(null)
+    // Remove user data from local storage or cookies
+    localStorage.removeItem("user")
   }
 
-  const hasPermission = (section: string, action = "view"): boolean => {
-    if (!user) return false
-
-    const permissions = {
-      dashboard: {
-        view: ["project-lead", "team-member", "mentor"],
-      },
-      learning: {
-        view: ["project-lead", "team-member", "mentor", "alumni"],
-        submit: ["project-lead"],
-        review: ["mentor"],
-      },
-      projects: {
-        view: ["project-lead", "team-member", "mentor", "alumni", "public-viewer"],
-        edit: ["project-lead", "mentor"],
-      },
-      funding: {
-        view: ["project-lead", "team-member", "mentor"],
-      },
-      expenses: {
-        view: ["project-lead", "mentor"],
-        edit: ["project-lead", "mentor"],
-      },
-      marketplace: {
-        view: ["project-lead", "team-member", "mentor"],
-      },
-      community: {
-        view: ["project-lead", "team-member", "mentor", "alumni"],
-      },
-    }
-
-    return permissions[section]?.[action]?.includes(user.role) || false
+  const hasPermission = (section: string): boolean => {
+    // For now, allow access to all sections for development
+    // In production, this would check actual user permissions
+    const allowedSections = [
+      "dashboard",
+      "learning",
+      "funding",
+      "marketplace",
+      "community",
+      "projects",
+      "resources",
+      "settings",
+    ]
+    return allowedSections.includes(section)
   }
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout, hasPermission, isLoading }}>{children}</AuthContext.Provider>
-  )
+  const value: AuthContextProps = {
+    user,
+    login,
+    logout,
+    hasPermission,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    // Return a default state instead of throwing an error during development
-    return {
-      user: null,
-      login: async () => {},
-      logout: () => {},
-      hasPermission: () => true, // Allow all permissions by default
-      isLoading: false,
-    }
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
 }
