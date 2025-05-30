@@ -5,7 +5,20 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { BookOpen, DollarSign, Home, Menu, Settings, Users, Award, ShoppingBag, X, FileText } from "lucide-react"
+import {
+  BookOpen,
+  DollarSign,
+  Home,
+  Menu,
+  Settings,
+  Users,
+  Award,
+  ShoppingBag,
+  X,
+  FileText,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { AICompanionProvider } from "@/components/ai-companion/ai-companion-context"
@@ -31,6 +44,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [aiPanelMinimized, setAiPanelMinimized] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const pathname = usePathname()
   const { tasks } = useTasks()
@@ -187,12 +201,40 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               </main>
 
-              {/* AI Assistant panel - fixed width, doesn't take up too much space */}
-              <div className="hidden lg:flex lg:flex-shrink-0">
-                <div className="flex flex-col w-80 border-l border-gray-200 bg-white">
-                  <div className="h-full p-4">
-                    <AICompanion />
+              {/* AI Assistant panel - with slide functionality */}
+              <div className="hidden lg:flex lg:flex-shrink-0 relative">
+                <div
+                  className={`flex flex-col border-l border-gray-200 bg-white transition-all duration-300 ease-in-out ${
+                    aiPanelMinimized ? "w-12" : "w-80"
+                  }`}
+                >
+                  {/* Toggle button */}
+                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1/2 z-10">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0 rounded-full bg-white border-gray-300 shadow-md hover:shadow-lg"
+                      onClick={() => setAiPanelMinimized(!aiPanelMinimized)}
+                    >
+                      {aiPanelMinimized ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </Button>
                   </div>
+
+                  {/* AI Companion content */}
+                  <div
+                    className={`h-full transition-opacity duration-300 ${aiPanelMinimized ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+                  >
+                    <div className="h-full p-4">
+                      <AICompanion />
+                    </div>
+                  </div>
+
+                  {/* Minimized state indicator */}
+                  {aiPanelMinimized && (
+                    <div className="flex flex-col items-center justify-center h-full p-2">
+                      <div className="writing-mode-vertical text-xs text-gray-500 transform rotate-180">AI Guide</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
