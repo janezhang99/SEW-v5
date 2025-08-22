@@ -1,514 +1,369 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ArrowRight, DollarSign, BookOpen, Lightbulb, Target, Star, Play, CheckCircle } from "lucide-react"
+import { CardFooter } from "@/components/ui/card"
 import Link from "next/link"
-import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { GlobalSearch } from "@/components/global-search"
+import { Suspense } from "react"
+import {
+  ArrowRight,
+  DollarSign,
+  Users,
+  Lightbulb,
+  Heart,
+  MapPin,
+  Briefcase,
+  MessageSquare,
+  CheckCircle,
+} from "lucide-react"
 
-export default function HomePage() {
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-emerald-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">SEW</span>
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                Small Economy Works
-              </span>
-            </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="#how-it-works" className="text-gray-700 hover:text-emerald-600 font-medium">
-                How It Works
-              </Link>
-              <Link href="#stories" className="text-gray-700 hover:text-emerald-600 font-medium">
-                Success Stories
-              </Link>
-              <Link href="#programs" className="text-gray-700 hover:text-emerald-600 font-medium">
-                Programs
-              </Link>
-              <Link href="#community" className="text-gray-700 hover:text-emerald-600 font-medium">
-                Community
-              </Link>
-              <Button className="bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600">
-                Get Started
-              </Button>
+    <div className="flex flex-col min-h-screen">
+      <header className="sticky top-0 z-50 w-full border-b bg-background">
+        <div className="flex h-16 items-center px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center">
+            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+              SEW
             </div>
           </div>
+          <nav className="ml-auto flex items-center gap-4 sm:gap-6">
+            <Link href="/about" className="text-sm font-medium transition-colors hover:text-primary">
+              About
+            </Link>
+            <Link href="/how-it-works" className="text-sm font-medium transition-colors hover:text-primary">
+              How It Works
+            </Link>
+            <Link href="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
+              Dashboard
+            </Link>
+            <Suspense fallback={<div className="w-[200px]" />}>
+              <GlobalSearch />
+            </Suspense>
+            <Button asChild>
+              <Link href="/register">Get Started</Link>
+            </Button>
+          </nav>
         </div>
-      </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
+      <main className="flex-1">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted/50">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
               <div className="space-y-4">
-                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Where Youth Lead</Badge>
-                <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
-                  Turn Your{" "}
-                  <span className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                    Big Ideas
-                  </span>{" "}
-                  Into Reality
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                  Learn, Build, and Fund Your Community Project
                 </h1>
-                <p className="text-xl text-gray-600 leading-relaxed">
-                  Learn entrepreneurship skills while building your dream project. Get funding, mentorship, and
-                  community support - all designed by and for Indigenous youth.
+                <p className="text-muted-foreground md:text-xl">
+                  Small Economy Works helps youth in rural, remote, Northern, and Indigenous communities develop
+                  entrepreneurial skills while accessing micro-grant funding.
                 </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-lg px-8 py-4"
-                >
-                  Start Your Project Today
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-lg px-8 py-4 bg-transparent"
-                >
-                  <Play className="mr-2 h-5 w-5" />
-                  Watch How It Works
-                </Button>
-              </div>
-
-              <div className="flex items-center space-x-8 pt-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-emerald-600">500+</div>
-                  <div className="text-sm text-gray-600">Young Entrepreneurs</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">$250K+</div>
-                  <div className="text-sm text-gray-600">Funding Distributed</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">95%</div>
-                  <div className="text-sm text-gray-600">Success Rate</div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button size="lg" asChild>
+                    <Link href="/register">
+                      Start Your Journey
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="lg" asChild>
+                    <Link href="/how-it-works">How It Works</Link>
+                  </Button>
                 </div>
               </div>
-            </div>
-
-            <div className="relative">
-              <div className="relative z-10">
-                <Image
-                  src="/youth-workshop.png"
-                  alt="Youth working together on entrepreneurship projects"
-                  width={600}
-                  height={400}
-                  className="rounded-2xl shadow-2xl"
+              <div className="relative aspect-video overflow-hidden rounded-xl">
+                <img
+                  src="/placeholder-ukgjx.png"
+                  alt="Diverse group of young entrepreneurs"
+                  className="object-cover w-full h-full"
                 />
               </div>
-              <div className="absolute -top-4 -right-4 w-72 h-72 bg-gradient-to-br from-emerald-200 to-blue-200 rounded-full opacity-20 blur-3xl"></div>
-              <div className="absolute -bottom-4 -left-4 w-72 h-72 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full opacity-20 blur-3xl"></div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* How It Works - Process Mapping */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">
-              A Different Kind of{" "}
-              <span className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                Grant Program
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Unlike traditional grants, we believe in learning while earning. Build skills, get funded, and create
-              lasting impact in your community.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="relative overflow-hidden border-emerald-100 hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
-                  <Lightbulb className="h-6 w-6 text-white" />
-                </div>
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-emerald-100 text-emerald-700">Step 1</Badge>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Share Your Idea</h3>
-                <p className="text-gray-600">
-                  Tell us about your project vision. No business plan required - just passion and purpose.
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">How Our Platform Works</h2>
+                <p className="text-muted-foreground md:text-xl">
+                  Learn entrepreneurial skills while unlocking micro-grant funding for your project
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card className="relative overflow-hidden border-blue-100 hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
-                  <BookOpen className="h-6 w-6 text-white" />
-                </div>
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-blue-100 text-blue-700">Step 2</Badge>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Learn & Build</h3>
-                <p className="text-gray-600">
-                  Complete interactive modules while developing your project with mentor support.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="relative overflow-hidden border-purple-100 hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
-                  <DollarSign className="h-6 w-6 text-white" />
-                </div>
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-purple-100 text-purple-700">Step 3</Badge>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Earn Funding</h3>
-                <p className="text-gray-600">
-                  Receive micro-grants as you complete milestones. No waiting until the end!
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="relative overflow-hidden border-pink-100 hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center mb-4">
-                  <Target className="h-6 w-6 text-white" />
-                </div>
-                <div className="absolute top-4 right-4">
-                  <Badge className="bg-pink-100 text-pink-700">Step 4</Badge>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Launch & Impact</h3>
-                <p className="text-gray-600">
-                  Bring your project to life and create positive change in your community.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Success Stories */}
-      <section id="stories" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-emerald-50 to-blue-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">
-              Real Stories,{" "}
-              <span className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                Real Impact
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600">See how young entrepreneurs are transforming their communities</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="relative h-48">
-                <Image src="/community-garden.png" alt="Community garden project" fill className="object-cover" />
               </div>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge className="bg-emerald-100 text-emerald-700">Community Impact</Badge>
-                  <span className="text-sm font-semibold text-emerald-600">$2,500 funded</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Urban Indigenous Garden</h3>
-                <p className="text-gray-600 mb-4">
-                  "I created a community garden that teaches traditional plant knowledge to urban Indigenous youth. SEW
-                  helped me turn my passion into a thriving community space."
+            </div>
+            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 lg:gap-12 mt-12">
+              <Card className="flex flex-col items-center text-center">
+                <CardHeader>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                    <MessageSquare className="h-8 w-8 text-primary" />
+                  </div>
+                  <CardTitle>Chat with AI Coach</CardTitle>
+                  <CardDescription>
+                    Our AI coach assesses your skills and interests to create a personalized learning journey
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    The AI coach helps identify your strengths, areas for growth, and guides you through the entire
+                    process.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="flex flex-col items-center text-center">
+                <CardHeader>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                    <CheckCircle className="h-8 w-8 text-primary" />
+                  </div>
+                  <CardTitle>Complete Learning Tasks</CardTitle>
+                  <CardDescription>
+                    Work through personalized tasks that build your entrepreneurial skills
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Each task teaches valuable skills while helping you develop your project idea into reality.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="flex flex-col items-center text-center">
+                <CardHeader>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                    <DollarSign className="h-8 w-8 text-primary" />
+                  </div>
+                  <CardTitle>Unlock Funding</CardTitle>
+                  <CardDescription>Each completed task unlocks a portion of your micro-grant funding</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    As you learn and build your project, you'll gain access to the funding needed to bring it to life.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted/50">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Learning Paths</h2>
+                <p className="text-muted-foreground md:text-xl">
+                  Develop skills across multiple areas to create a well-rounded project
                 </p>
-                <div className="flex items-center space-x-3">
-                  <Image src="/avatars/fireweed.png" alt="Sarah" width={40} height={40} className="rounded-full" />
-                  <div>
-                    <div className="font-medium">Sarah, 19</div>
-                    <div className="text-sm text-gray-500">Vancouver, BC</div>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 mt-12">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Heart className="h-5 w-5 text-primary" />
+                    <CardTitle>Personal Growth</CardTitle>
+                  </div>
+                  <CardDescription>Connect your project to your values</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Personal Why Statement</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Personal Growth Goals</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Core Values Identification</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <CardTitle>Community Connection</CardTitle>
+                  </div>
+                  <CardDescription>Address community needs</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Community Needs Assessment</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Stakeholder Mapping</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Community Engagement Plan</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    <CardTitle>Cultural Connection</CardTitle>
+                  </div>
+                  <CardDescription>Honor cultural knowledge</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Cultural Values Integration</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Land-Based Activities</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Traditional Knowledge</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-primary" />
+                    <CardTitle>Project Development</CardTitle>
+                  </div>
+                  <CardDescription>Design your project</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Project Vision Statement</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Project Planning</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Implementation Strategy</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                    <CardTitle>Business Skills</CardTitle>
+                  </div>
+                  <CardDescription>Build practical skills</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Budget Development</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Marketing Basics</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      <span>Business Model Canvas</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Replaced the "Ready to Get Started" section with the "Our Vision" section */}
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Our Vision</CardTitle>
+                <CardDescription>Thriving, sustainable, and vibrant small communities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-muted p-4">
+                    <h3 className="font-medium mb-2">Thriving, sustainable, and vibrant small communities</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Small Economy Works believes that people who are equipped with entrepreneurial mindsets and
+                      skills, and who are engaged with and supported by their community have the power to create
+                      positive and lasting change.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="rounded-md border p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Heart className="h-5 w-5 text-primary" />
+                        <h3 className="font-medium">Individuals</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        We support participants to gain knowledge, skills and confidence through leadership and
+                        entrepreneurial training.
+                      </p>
+                    </div>
+
+                    <div className="rounded-md border p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Lightbulb className="h-5 w-5 text-primary" />
+                        <h3 className="font-medium">Institutions</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        We support Northern-based institutions to develop innovative and skills-based programming.
+                      </p>
+                    </div>
+
+                    <div className="rounded-md border p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MapPin className="h-5 w-5 text-primary" />
+                        <h3 className="font-medium">Communities</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        We ensure our offering is in line with community values, rooted in Indigenous cultures and
+                        Northern realities.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="relative h-48">
-                <Image src="/red-barn-landscape.png" alt="Traditional arts workshop" fill className="object-cover" />
-              </div>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge className="bg-blue-100 text-blue-700">Cultural Arts</Badge>
-                  <span className="text-sm font-semibold text-blue-600">$3,200 funded</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Traditional Arts Collective</h3>
-                <p className="text-gray-600 mb-4">
-                  "My beadwork and traditional arts workshops now serve 50+ youth monthly. SEW gave me the business
-                  skills to scale my cultural teachings."
-                </p>
-                <div className="flex items-center space-x-3">
-                  <Image src="/avatars/arctic-willow.png" alt="Maria" width={40} height={40} className="rounded-full" />
-                  <div>
-                    <div className="font-medium">Maria, 22</div>
-                    <div className="text-sm text-gray-500">Winnipeg, MB</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="relative h-48">
-                <Image src="/mountain-terrain.png" alt="Tech innovation project" fill className="object-cover" />
-              </div>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge className="bg-purple-100 text-purple-700">Tech Innovation</Badge>
-                  <span className="text-sm font-semibold text-purple-600">$4,000 funded</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Language Learning App</h3>
-                <p className="text-gray-600 mb-4">
-                  "I built an app that helps preserve our Indigenous language through interactive games. Now it's used
-                  in schools across three provinces!"
-                </p>
-                <div className="flex items-center space-x-3">
-                  <Image src="/avatars/labrador-tea.png" alt="Jordan" width={40} height={40} className="rounded-full" />
-                  <div>
-                    <div className="font-medium">Jordan, 20</div>
-                    <div className="text-sm text-gray-500">Calgary, AB</div>
-                  </div>
-                </div>
-              </CardContent>
+              <CardFooter>
+                <Button size="lg" asChild>
+                  <Link href="/register">
+                    Start Your Journey
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardFooter>
             </Card>
           </div>
+        </section>
+      </main>
 
-          <div className="text-center mt-12">
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 bg-transparent"
-            >
-              View All Success Stories
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Strong CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-emerald-600 to-blue-600">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">Ready to Turn Your Idea Into Impact?</h2>
-          <p className="text-xl text-emerald-100 mb-8 max-w-2xl mx-auto">
-            Join hundreds of young Indigenous entrepreneurs who are building the future. It's free to get started, and
-            you'll have support every step of the way.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-            <Button size="lg" className="bg-white text-emerald-600 hover:bg-gray-50 text-lg px-8 py-4">
-              Start Your Project Today
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white/10 text-lg px-8 py-4 bg-transparent"
-            >
-              Talk to a Mentor First
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-center space-x-6 text-emerald-100">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5" />
-              <span>Free to get started</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5" />
-              <span>1-on-1 mentorship</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5" />
-              <span>Funding while you learn</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Community Testimonials */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">
-              What Our{" "}
-              <span className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                Community Says
-              </span>
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="p-6 border-emerald-100">
-              <div className="flex items-center space-x-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <p className="text-gray-600 mb-4">
-                "SEW didn't just give me funding - they gave me confidence. The mentorship and community support made
-                all the difference in my journey."
-              </p>
-              <div className="flex items-center space-x-3">
-                <Image src="/avatars/yarrow.png" alt="Alex" width={40} height={40} className="rounded-full" />
-                <div>
-                  <div className="font-medium">Alex, 21</div>
-                  <div className="text-sm text-gray-500">Social Enterprise Founder</div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6 border-blue-100">
-              <div className="flex items-center space-x-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <p className="text-gray-600 mb-4">
-                "The learning modules were actually fun and relevant to my project. I learned business skills while
-                building something I'm passionate about."
-              </p>
-              <div className="flex items-center space-x-3">
-                <Image src="/avatars/dwarf-birch.png" alt="Taylor" width={40} height={40} className="rounded-full" />
-                <div>
-                  <div className="font-medium">Taylor, 18</div>
-                  <div className="text-sm text-gray-500">Tech Entrepreneur</div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6 border-purple-100">
-              <div className="flex items-center space-x-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <p className="text-gray-600 mb-4">
-                "I love how SEW celebrates our culture while teaching modern business skills. It's exactly what our
-                community needed."
-              </p>
-              <div className="flex items-center space-x-3">
-                <Image
-                  src="/avatars/fireweed-illustration.png"
-                  alt="River"
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
-                <div>
-                  <div className="font-medium">River, 23</div>
-                  <div className="text-sm text-gray-500">Cultural Arts Leader</div>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">SEW</span>
-                </div>
-                <span className="text-xl font-bold">Small Economy Works</span>
-              </div>
-              <p className="text-gray-400">
-                Empowering Indigenous youth to build thriving businesses and stronger communities.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Programs</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Entrepreneurship
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Mentorship
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Funding
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Community
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Success Stories
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Learning Hub
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Events
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Support
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-4">Connect</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Contact Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Newsletter
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Social Media
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white">
-                    Partners
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Small Economy Works. All rights reserved.</p>
-          </div>
+      <footer className="w-full border-t py-6 md:py-0">
+        <div className="container flex flex-col md:flex-row items-center justify-between gap-4 md:h-24 px-4 md:px-6">
+          <p className="text-sm text-muted-foreground">© 2025 Small Economy Works. All rights reserved.</p>
+          <nav className="flex gap-4 sm:gap-6">
+            <Link href="/terms" className="text-sm font-medium transition-colors hover:text-primary">
+              Terms
+            </Link>
+            <Link href="/privacy" className="text-sm font-medium transition-colors hover:text-primary">
+              Privacy
+            </Link>
+            <Link href="/contact" className="text-sm font-medium transition-colors hover:text-primary">
+              Contact
+            </Link>
+          </nav>
         </div>
       </footer>
     </div>

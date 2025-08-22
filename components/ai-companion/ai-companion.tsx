@@ -26,10 +26,11 @@ export function AICompanion({ currentStep }: AICompanionProps) {
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
+  const [hasProvidedContextualMessage, setHasProvidedContextualMessage] = useState(false)
 
   // Detect if we're on a task page
   useEffect(() => {
-    if (pathname) {
+    if (pathname && !hasProvidedContextualMessage) {
       const pathParts = pathname.split("/")
       if (pathParts.length >= 5 && pathParts[1] === "dashboard" && pathParts[2] === "learning") {
         const category = pathParts[3]
@@ -41,15 +42,16 @@ export function AICompanion({ currentStep }: AICompanionProps) {
           if (task) {
             const contextualMessage = `I see you're working on the "${task.name}" task. This task is about ${task.description.toLowerCase()}. I'm here to help you complete it successfully. Would you like some guidance on how to approach this task?`
             sendMessage(contextualMessage, true)
+            setHasProvidedContextualMessage(true)
           }
         }
       }
     }
-  }, [pathname, state.conversationHistory.length, sendMessage, getTaskById])
+  }, [pathname, hasProvidedContextualMessage, state.conversationHistory.length, sendMessage, getTaskById])
 
   // Add this near the top of the component
   useEffect(() => {
-    if (currentStep && state.conversationHistory.length <= 1) {
+    if (currentStep && !hasProvidedContextualMessage && state.conversationHistory.length <= 1) {
       // Provide contextual guidance based on the current step
       const contextualMessages: Record<string, string> = {
         register:
@@ -65,11 +67,11 @@ export function AICompanion({ currentStep }: AICompanionProps) {
       }
 
       if (contextualMessages[currentStep]) {
-        // Use sendMessage instead of directly modifying state
         sendMessage(contextualMessages[currentStep], true)
+        setHasProvidedContextualMessage(true)
       }
     }
-  }, [currentStep, state.conversationHistory.length, sendMessage])
+  }, [currentStep, hasProvidedContextualMessage, state.conversationHistory.length, sendMessage])
 
   // Scroll to bottom of messages when new ones are added
   useEffect(() => {

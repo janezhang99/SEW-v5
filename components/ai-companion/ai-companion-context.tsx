@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { usePathname } from "next/navigation"
 import { useExpenses } from "@/contexts/expenses-context"
 import { useTasks } from "@/contexts/tasks-context"
@@ -50,7 +50,6 @@ const defaultAvatars: AICompanionAvatar[] = [
   {
     id: "arctic-willow",
     name: "Arctic Willow",
-    name: "Arctic Willow",
     description: "Creative and innovative. Helps you think outside the box.",
     imageSrc: "/avatars/arctic-willow.png",
   },
@@ -98,7 +97,7 @@ export const AICompanionProvider: React.FC<{ children: React.ReactNode }> = ({ c
         conversationHistory: [welcomeMessage],
       }))
     }
-  }, [])
+  }, [state.conversationHistory.length])
 
   // Load user profile and avatar from local storage or API
   useEffect(() => {
@@ -219,7 +218,7 @@ export const AICompanionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setContextualSuggestions(newSuggestions)
   }, [pathname])
 
-  const updateUserProfile = (updates: Partial<UserProfile>) => {
+  const updateUserProfile = useCallback((updates: Partial<UserProfile>) => {
     setState((prev) => ({
       ...prev,
       currentUser: prev.currentUser
@@ -229,16 +228,16 @@ export const AICompanionProvider: React.FC<{ children: React.ReactNode }> = ({ c
           }
         : null,
     }))
-  }
+  }, [])
 
-  const setInteractionMode = (mode: InteractionMode) => {
+  const setInteractionMode = useCallback((mode: InteractionMode) => {
     setState((prev) => ({
       ...prev,
       interactionMode: mode,
     }))
-  }
+  }, [])
 
-  const setAvatar = (avatar: AvatarType) => {
+  const setAvatar = useCallback((avatar: AvatarType) => {
     setState((prev) => ({
       ...prev,
       avatar,
@@ -277,9 +276,9 @@ export const AICompanionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       ...prev,
       conversationHistory: [...prev.conversationHistory, systemMessage, assistantMessage],
     }))
-  }
+  }, [])
 
-  const startModule = (moduleId: string) => {
+  const startModule = useCallback((moduleId: string) => {
     const module = moduleFlows[moduleId]
     if (!module) {
       console.error(`Module ${moduleId} not found`)
@@ -312,99 +311,111 @@ export const AICompanionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       interactionMode: "guided",
       conversationHistory: [...prev.conversationHistory, systemMessage, assistantMessage],
     }))
-  }
+  }, [])
 
-  const generateResponse = async (prompt: string, options?: { tone?: TonePreference }) => {
-    try {
-      // Create system prompt based on user profile, avatar, and preferences
-      const systemPrompt = createSystemPrompt(state.currentUser, state.avatar, options?.tone)
+  const generateResponse = useCallback(
+    async (prompt: string, options?: { tone?: TonePreference }) => {
+      try {
+        // Create system prompt based on user profile, avatar, and preferences
+        const systemPrompt = createSystemPrompt(state.currentUser, state.avatar, options?.tone)
 
-      // Get conversation history in the format expected by the AI
-      const conversationContext = state.conversationHistory
-        .filter((msg) => msg.role !== "system")
-        .slice(-10) // Last 10 messages for context
-        .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
-        .join("\n")
+        // Get conversation history in the format expected by the AI
+        const conversationContext = state.conversationHistory
+          .filter((msg) => msg.role !== "system")
+          .slice(-10) // Last 10 messages for context
+          .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
+          .join("\n")
 
-      const { text } = await generateText({
-        model: openai("gpt-4o"),
-        system: systemPrompt,
-        prompt: `${conversationContext}\n\nUser: ${prompt}\n\nAssistant:`,
-      })
+        const { text } = await generateText({
+          model: openai("gpt-4o"),
+          system: systemPrompt,
+          prompt: `${conversationContext}\n\nUser: ${prompt}\n\nAssistant:`,
+        })
 
-      return text
-    } catch (error) {
-      console.error("Error generating AI response:", error)
-      throw error
-    }
-  }
+        return text
+      } catch (error) {
+        console.error("Error generating AI response:", error)
+        throw error
+      }
+    },
+    [state.currentUser, state.avatar, state.conversationHistory],
+  )
 
-  // Simulate AI response
-  const sendMessage = async (message: string) => {
-    setIsLoading(true)
+  // Stable sendMessage function using useCallback
+  const sendMessage = useCallback(
+    async (message: string, isSystemMessage = false) => {
+      if (state.isGenerating) return
 
-    // Add user message
-    setMessages((prev) => [...prev, { role: "user", content: message }])
+      setState((prev) => ({ ...prev, isGenerating: true }))
 
-    // Simulate AI thinking
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+      try {
+        // Add user message if not a system message
+        if (!isSystemMessage) {
+          const userMessage: Message = {
+            id: uuidv4(),
+            role: "user",
+            content: message,
+            timestamp: new Date(),
+          }
 
-    // Generate contextual response based on message and current section
-    let response = ""
-    const pathParts = pathname.split("/").filter(Boolean)
-    const section = pathParts[1] || "dashboard"
+          setState((prev) => ({
+            ...prev,
+            conversationHistory: [...prev.conversationHistory, userMessage],
+          }))
+        }
 
-    // Simple pattern matching for demo purposes
-    if (message.toLowerCase().includes("project")) {
-      response =
-        "Projects are the core of your work at Small Economy Works. They help you organize your initiatives, track progress, and collaborate with others. What specific aspect of project management would you like help with?"
-    } else if (message.toLowerCase().includes("expense") || message.toLowerCase().includes("budget")) {
-      response =
-        "Managing expenses is crucial for the success of your initiatives. Small Economy Works provides tools to track expenses, categorize them, and generate reports. Would you like tips on budget management or help with a specific expense-related task?"
-    } else if (message.toLowerCase().includes("learn")) {
-      response =
-        "Continuous learning is a key value at Small Economy Works. Our learning modules cover project management, financial literacy, community engagement, and more. What skills are you interested in developing?"
-    } else if (message.toLowerCase().includes("mentor")) {
-      response =
-        "Mentorship can accelerate your growth and help you navigate challenges. Small Economy Works connects you with experienced mentors who can provide guidance specific to your needs. Would you like help finding a mentor or preparing for a mentorship session?"
-    } else if (message.toLowerCase().includes("community")) {
-      response =
-        "Community is at the heart of Small Economy Works. Building strong relationships and networks can amplify your impact. How are you currently engaging with your community, and how can I help you strengthen those connections?"
-    } else {
-      response =
-        "I'm here to help you navigate Small Economy Works and make the most of the platform. I can assist with project management, expense tracking, learning resources, funding opportunities, mentorship, and community engagement. What would you like to focus on today?"
-    }
+        // Generate AI response
+        const response = await generateResponse(message)
 
-    // Add AI response
-    setMessages((prev) => [...prev, { role: "assistant", content: response }])
-    setIsLoading(false)
+        const assistantMessage: Message = {
+          id: uuidv4(),
+          role: "assistant",
+          content: response,
+          timestamp: new Date(),
+        }
 
-    // Generate new contextual suggestions based on the conversation
-    const newSuggestions = [
-      "Tell me more about that",
-      "How can I get started?",
-      "What resources are available?",
-      "Show me an example",
-    ]
-    setContextualSuggestions(newSuggestions)
-  }
+        setState((prev) => ({
+          ...prev,
+          conversationHistory: [...prev.conversationHistory, assistantMessage],
+          isGenerating: false,
+        }))
+      } catch (error) {
+        console.error("Error sending message:", error)
+        setState((prev) => ({ ...prev, isGenerating: false }))
+      }
+    },
+    [state.isGenerating, generateResponse],
+  )
 
-  const handleGuidedInteraction = async (
-    userInput: string,
-    module: ModuleFlow,
-    currentStepId: string,
-  ): Promise<string> => {
-    const currentStep = module.steps.find((step) => step.id === currentStepId)
-    if (!currentStep) {
-      return "I'm sorry, I couldn't find the current step in this module."
-    }
+  const handleGuidedInteraction = useCallback(
+    async (userInput: string, module: ModuleFlow, currentStepId: string): Promise<string> => {
+      const currentStep = module.steps.find((step) => step.id === currentStepId)
+      if (!currentStep) {
+        return "I'm sorry, I couldn't find the current step in this module."
+      }
 
-    // If the current step has options, try to match the user input to an option
-    if (currentStep.options && currentStep.options.length > 0) {
-      const matchedOption = currentStep.options.find((opt) => userInput.toLowerCase().includes(opt.text.toLowerCase()))
+      // If the current step has options, try to match the user input to an option
+      if (currentStep.options && currentStep.options.length > 0) {
+        const matchedOption = currentStep.options.find((opt) =>
+          userInput.toLowerCase().includes(opt.text.toLowerCase()),
+        )
 
-      if (matchedOption) {
-        const nextStep = module.steps.find((step) => step.id === matchedOption.nextStepId)
+        if (matchedOption) {
+          const nextStep = module.steps.find((step) => step.id === matchedOption.nextStepId)
+          if (nextStep) {
+            // Update the current step
+            setState((prev) => ({
+              ...prev,
+              currentStepId: nextStep.id,
+            }))
+            return nextStep.content
+          }
+        }
+      }
+
+      // If there's a direct next step, use that
+      if (currentStep.nextStepId) {
+        const nextStep = module.steps.find((step) => step.id === currentStep.nextStepId)
         if (nextStep) {
           // Update the current step
           setState((prev) => ({
@@ -414,47 +425,36 @@ export const AICompanionProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return nextStep.content
         }
       }
-    }
 
-    // If there's a direct next step, use that
-    if (currentStep.nextStepId) {
-      const nextStep = module.steps.find((step) => step.id === currentStep.nextStepId)
-      if (nextStep) {
-        // Update the current step
-        setState((prev) => ({
-          ...prev,
-          currentStepId: nextStep.id,
-        }))
-        return nextStep.content
-      }
-    }
+      // If we couldn't determine the next step, generate a response based on the user input
+      return generateResponse(userInput, { tone: currentStep.metadata?.tone })
+    },
+    [generateResponse],
+  )
 
-    // If we couldn't determine the next step, generate a response based on the user input
-    return generateResponse(userInput, { tone: currentStep.metadata?.tone })
-  }
+  const createSystemPrompt = useCallback(
+    (user: UserProfile | null, avatar: AvatarType, overrideTone?: TonePreference): string => {
+      // Avatar-specific personality and tone
+      const avatarPersonality = getAvatarPersonality(avatar)
 
-  const createSystemPrompt = (user: UserProfile | null, avatar: AvatarType, overrideTone?: TonePreference): string => {
-    // Avatar-specific personality and tone
-    const avatarPersonality = getAvatarPersonality(avatar)
-
-    if (!user) {
-      return `
+      if (!user) {
+        return `
 You are an AI companion for Small Economy Works, a program that supports youth entrepreneurship in rural, remote, Northern, and Indigenous communities.
 Your role is to guide users through their learning journey, which is also their micro-grant application process.
 Be supportive, culturally responsive, and focus on practical advice.
 
 ${avatarPersonality}
       `
-    }
+      }
 
-    const tone = overrideTone || user.tonePreference || "adaptive"
-    const toneGuidance = getToneGuidance(tone, user)
+      const tone = overrideTone || user.tonePreference || "adaptive"
+      const toneGuidance = getToneGuidance(tone, user)
 
-    return `
+      return `
 You are an AI companion for Small Economy Works, a program that supports youth entrepreneurship in rural, remote, Northern, and Indigenous communities.
 You're helping ${user.name}, who is at the ${user.skillLevel} skill level, in the ${user.businessStage} stage of their ${
-      user.projectType
-    } project.
+        user.projectType
+      } project.
 They have a ${user.learningStyle} learning style and are from a ${user.communityType} community.
 Their interests include: ${user.interests.join(", ")}.
 Their strengths include: ${user.strengths?.join(", ") || "Not yet identified"}.
@@ -467,9 +467,11 @@ ${toneGuidance}
 Your role is to guide them through their learning journey, which is also their micro-grant application process. As they complete learning tasks, they unlock portions of grant funding.
 Be supportive, culturally responsive, and focus on practical advice that connects to their community context.
     `
-  }
+    },
+    [],
+  )
 
-  const getAvatarPersonality = (avatar: AvatarType): string => {
+  const getAvatarPersonality = useCallback((avatar: AvatarType): string => {
     const personalities: Record<AvatarType, string> = {
       fireweed: `
 You are Fireweed, the Guide of Renewal. Your personality is:
@@ -514,9 +516,9 @@ You are Arctic Willow, the Guide of Resilience. Your personality is:
     }
 
     return personalities[avatar]
-  }
+  }, [])
 
-  const getToneGuidance = (tone: TonePreference, user: UserProfile): string => {
+  const getToneGuidance = useCallback((tone: TonePreference, user: UserProfile): string => {
     switch (tone) {
       case "coaching":
         return "Use a supportive coaching tone. Ask reflective questions, acknowledge their insights, and gently guide them toward their own solutions."
@@ -530,7 +532,7 @@ You are Arctic Willow, the Guide of Resilience. Your personality is:
       default:
         return `Adapt your tone based on the context. When they seem confident, use inquiry. When they seem uncertain, use coaching. When they're making progress, use cheerleading. When they need clarity, be directive. Their communication preference is ${user.communicationPreference}, so adjust accordingly.`
     }
-  }
+  }, [])
 
   const value: AICompanionContextType = {
     avatars: defaultAvatars,
