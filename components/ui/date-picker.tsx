@@ -27,7 +27,7 @@ export function DatePicker({
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}
-          className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground", className)}
+          className={cn("w-[280px] justify-start text-left font-normal", !date && "text-muted-foreground", className)}
           disabled={disabled}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
